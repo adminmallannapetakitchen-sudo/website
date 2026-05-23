@@ -1,0 +1,22 @@
+{
+  "name": "Mallannapeta Kitchen",
+  "short_name": "MK Kitchen",
+  "description": "Authentic Telangana village-style home-cooked meals from Jagtial",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFAF0",
+  "theme_color": "#B8332A",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.jpeg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "/logo.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}

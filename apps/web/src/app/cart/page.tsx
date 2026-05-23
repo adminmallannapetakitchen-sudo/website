@@ -1,0 +1,235 @@
+'use client'
+
+import Link from 'next/link'
+import Image from 'next/image'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, Tag, ShoppingBag } from 'lucide-react'
+import { useCartStore } from '@/store/cart-store'
+import { useLanguageStore } from '@/store/language-store'
+import { formatCurrency, cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Header } from '@/components/layout/header'
+import { Footer } from '@/components/layout/footer'
+import { useKitchenSettings } from '@/lib/hooks'
+import { useState } from 'react'
+import { toast } from 'sonner'
+
+export default function CartPage() {
+  const { t, language } = useLanguageStore()
+  const { items, updateQty, removeItem, subtotal, couponCode, applyCoupon, removeCoupon } = useCartStore()
+  const { settings } = useKitchenSettings()
+  const [couponInput, setCouponInput] = useState('')
+  const [couponError, setCouponError] = useState('')
+
+  // Delivery fee comes from the real kitchen settings (was hardcoded ₹40,
+  // which disagreed with the live ₹60 and the checkout total).
+  const deliveryFee = settings ? Number(settings.deliveryFee) : null
+  const sub = subtotal()
+  // Coupon discounts are validated & applied SERVER-SIDE at checkout. We no
+  // longer fake a discount here (the old MOCK_COUPONS even contained codes
+  // like SAVE20P that don't exist on the backend), so the cart estimate can
+  // never diverge from the authoritative checkout total.
+  const total = sub + (sub > 0 && deliveryFee !== null ? deliveryFee : 0)
+
+  const handleApplyCoupon = () => {
+    const code = couponInput.trim().toUpperCase()
+    if (!code) return
+    // Store the code only; the server validates it at checkout.
+    applyCoupon(code, 0)
+    toast.success(`Coupon "${code}" will be applied at checkout if valid`)
+    setCouponError('')
+    setCouponInput('')
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-1 pt-16 flex items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center py-20 px-4"
+          >
+            <motion.div
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="text-7xl mb-6"
+            >
+              🛒
+            </motion.div>
+            <h2 className={cn('text-2xl font-bold text-foreground mb-2', language === 'te' ? 'font-telugu' : '')}>
+              {t.cart.empty}
+            </h2>
+            <p className={cn('text-muted-foreground mb-6', language === 'te' ? 'font-telugu' : '')}>
+              {t.cart.emptySubtitle}
+            </p>
+            <Link href="/menu">
+              <Button size="lg" icon={<ShoppingBag className="w-5 h-5" />}>
+                <span className={language === 'te' ? 'font-telugu' : ''}>{t.cart.browseMenu}</span>
+              </Button>
+            </Link>
+          </motion.div>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      <Header />
+      <main className="flex-1 pt-16">
+        <div className="section py-8 md:py-12">
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={cn('text-2xl md:text-3xl font-bold text-foreground mb-8', language === 'te' ? 'font-telugu' : 'font-display')}
+          >
+            {t.cart.title}
+          </motion.h1>
+
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Cart items */}
+            <div className="lg:col-span-2 space-y-3">
+              <AnimatePresence initial={false}>
+                {items.map((item) => (
+                  <motion.div
+                    key={item.id}
+                    layout
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20, height: 0 }}
+                    className="card p-4 flex gap-4"
+                  >
+                    {/* Image */}
+                    <div className="relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-muted">
+                      {item.image ? (
+                        <Image
+                          src={item.image}
+                          alt={item.name}
+                          fill
+                          className="object-cover"
+                          sizes="80px"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-2xl">🍛</div>
+                      )}
+                    </div>
+
+                    {/* Details */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className={cn('font-semibold text-foreground truncate', language === 'te' ? 'font-telugu' : '')}>
+                        {language === 'te' ? item.nameTe : item.name}
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">{item.variantLabel}</p>
+                      <div className="flex items-center justify-between mt-3">
+                        {/* Qty */}
+                        <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
+                          <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => updateQty(item.id, item.qty - 1)}
+                            className="w-7 h-7 flex items-center justify-center rounded-md bg-white hover:bg-brand-red hover:text-white transition-colors"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </motion.button>
+                          <span className="w-7 text-center text-sm font-semibold">{item.qty}</span>
+                          <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => updateQty(item.id, item.qty + 1)}
+                            className="w-7 h-7 flex items-center justify-center rounded-md bg-brand-red text-white hover:bg-brand-red-dark transition-colors"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </motion.button>
+                        </div>
+                        <span className="font-bold text-foreground">{formatCurrency(item.price * item.qty)}</span>
+                      </div>
+                    </div>
+
+                    {/* Remove */}
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => removeItem(item.id)}
+                      className="p-1.5 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors self-start"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </motion.button>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+
+            {/* Order summary */}
+            <div className="space-y-4">
+              {/* Coupon */}
+              <div className="card p-4">
+                <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-brand-saffron" />
+                  {t.cart.coupon}
+                </h3>
+                {couponCode ? (
+                  <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                    <span className="text-green-700 font-semibold text-sm">{couponCode} — applied at checkout</span>
+                    <button onClick={removeCoupon} className="text-green-600 hover:text-red-600 text-xs font-medium transition-colors">
+                      {t.cart.remove}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      value={couponInput}
+                      onChange={(e) => { setCouponInput(e.target.value); setCouponError('') }}
+                      onKeyDown={(e) => e.key === 'Enter' && handleApplyCoupon()}
+                      placeholder={t.checkout.enterCoupon}
+                      className={cn('flex-1 input text-sm', couponError && 'border-red-400')}
+                    />
+                    <Button size="sm" onClick={handleApplyCoupon}>{t.cart.apply}</Button>
+                  </div>
+                )}
+                {couponError && <p className="text-xs text-red-600 mt-1">{couponError}</p>}
+                <p className="text-xs text-muted-foreground mt-2">Try: FIRST50, WELCOME100</p>
+              </div>
+
+              {/* Price breakdown */}
+              <div className="card p-4 space-y-3">
+                <h3 className={cn('font-semibold text-foreground', language === 'te' ? 'font-telugu' : '')}>
+                  {t.checkout.orderSummary}
+                </h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{t.cart.subtotal}</span>
+                    <span>{formatCurrency(sub)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{t.cart.delivery}</span>
+                    <span>
+                      {sub === 0
+                        ? t.cart.free
+                        : deliveryFee === null
+                          ? '—'
+                          : formatCurrency(deliveryFee)}
+                    </span>
+                  </div>
+                </div>
+                <div className="border-t border-border pt-3 flex justify-between font-bold text-base">
+                  <span>{t.cart.total}</span>
+                  <span className="text-brand-red">{formatCurrency(total)}</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Coupons &amp; final total are confirmed at checkout.
+                </p>
+                <Link href="/checkout" className="block">
+                  <Button className="w-full" size="lg" iconRight={<ArrowRight className="w-5 h-5" />}>
+                    <span className={language === 'te' ? 'font-telugu' : ''}>{t.cart.checkout}</span>
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  )
+}

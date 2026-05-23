@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+.next/
+dist/
+out/
+build/
+*.tsbuildinfo
+.turbo
+
+# Environment / secrets (never commit real values)
+.env
+.env.local
+.env*.local
+
+# Logs
+*.log
+
+# QA / test artifacts (contain live tokens — never commit)
+.qa/
+.qa_*
+TEST_REPORT.md
+
+# Local scratch notes & design-reference assets (not part of the build)
+start.txt
+/logo.jpeg
+/menu.jpeg
+
+# Runtime uploads (keep folder, ignore contents)
+apps/web/public/uploads/*
+!apps/web/public/uploads/.gitkeep
+
+# OS files
+.DS_Store
+Thumbs.db

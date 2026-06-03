@@ -13,6 +13,7 @@ export class MenuService {
     const where: Prisma.MenuItemWhereInput = {
       deletedAt: null,
       isAvailable: true,
+      isSundaySpecialOnly: false,
       category: { deletedAt: null, isActive: true },
     };
     if (opts.categoryId) where.categoryId = opts.categoryId;
@@ -50,7 +51,9 @@ export class MenuService {
   // ─── ADMIN ──────────────────────────────────────────────
 
   listAdmin(opts: { search?: string; categoryId?: string; includeDeleted?: boolean } = {}) {
-    const where: Prisma.MenuItemWhereInput = {};
+    // Hidden Sunday-special backing items are managed on the Sunday Specials
+    // screen, not the menu screen — keep them out of the admin menu list.
+    const where: Prisma.MenuItemWhereInput = { isSundaySpecialOnly: false };
     if (!opts.includeDeleted) where.deletedAt = null;
     if (opts.categoryId) where.categoryId = opts.categoryId;
     if (opts.search) {

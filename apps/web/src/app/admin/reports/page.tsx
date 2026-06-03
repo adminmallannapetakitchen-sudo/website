@@ -24,6 +24,7 @@ export default function AdminReportsPage() {
   const daily: { date: string; orders: number; revenue: number }[] = sales?.daily ?? []
   const totalRevenue = sales?.totalRevenue ?? 0
   const totalOrders = sales?.totalOrders ?? 0
+  const byPayment = sales?.byPaymentMethod ?? { RAZORPAY: { orders: 0, revenue: 0 }, COD: { orders: 0, revenue: 0 } }
   const maxRevenue = Math.max(1, ...daily.map((d) => d.revenue))
   const maxItemQty = Math.max(1, ...topItems.map((t: any) => t.qty))
 
@@ -93,6 +94,26 @@ export default function AdminReportsPage() {
             ))}
           </div>
         )}
+      </motion.div>
+
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="card p-5">
+        <h2 className="font-semibold text-foreground mb-4">Payment Methods</h2>
+        <div className="grid grid-cols-2 gap-4">
+          {([
+            { key: 'RAZORPAY', label: 'Online (Razorpay)', color: 'text-green-600 bg-green-50' },
+            { key: 'COD', label: 'Cash on Delivery', color: 'text-amber-600 bg-amber-50' },
+          ] as const).map((pm) => {
+            const d = byPayment[pm.key] ?? { orders: 0, revenue: 0 }
+            const share = totalRevenue ? Math.round((d.revenue / totalRevenue) * 100) : 0
+            return (
+              <div key={pm.key} className="rounded-xl border border-border p-4">
+                <span className={cn('inline-block text-xs font-medium px-2 py-0.5 rounded-full mb-2', pm.color)}>{pm.label}</span>
+                <p className="text-lg font-bold text-foreground">{formatCurrency(d.revenue)}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{d.orders} orders · {share}% of revenue</p>
+              </div>
+            )
+          })}
+        </div>
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="card p-5">

@@ -1,26 +1,68 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsBoolean, IsDate, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import {
+  ArrayMinSize,
+  IsArray,
+  IsBoolean,
+  IsDate,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
 import { Role } from '@prisma/client';
 import { SundaySpecialService } from './sunday-special.service';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Audit } from '../../common/decorators/audit.decorator';
 
-class CreateSundaySpecialDto {
-  @IsString() menuItemId!: string;
-  @Type(() => Date) @IsDate() weekStarting!: Date;
-  @IsNumber() @Min(0) specialPrice!: number;
-  @IsOptional() @IsString() bannerPhotoUrl?: string;
-  @IsOptional() @IsString() bannerHeadline?: string;
-  @IsOptional() @IsString() bannerHeadlineTe?: string;
-  @IsOptional() @IsString() description?: string;
-  @IsOptional() @IsString() descriptionTe?: string;
-  @IsOptional() @IsBoolean() isActive?: boolean;
+class SundaySpecialVariantDto {
+  @IsOptional() @IsString() id?: string;
+  @IsString() @MinLength(1) label!: string;
+  @IsOptional() @IsString() labelTe?: string;
+  @IsNumber() @Min(0) price!: number;
 }
 
-class UpdateSundaySpecialDto extends CreateSundaySpecialDto {}
+class CreateSundaySpecialDto {
+  @IsString() @MinLength(1) name!: string;
+  @IsOptional() @IsString() nameTe?: string;
+  @IsOptional() @IsString() description?: string;
+  @IsOptional() @IsString() descriptionTe?: string;
+  @IsOptional() @IsString() imageUrl?: string;
+  @Type(() => Date) @IsDate() weekStarting!: Date;
+  @IsOptional() @IsString() bannerHeadline?: string;
+  @IsOptional() @IsString() bannerHeadlineTe?: string;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+  @IsOptional() @IsBoolean() availableAnyDay?: boolean;
+
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => SundaySpecialVariantDto)
+  variants!: SundaySpecialVariantDto[];
+}
+
+class UpdateSundaySpecialDto {
+  @IsOptional() @IsString() @MinLength(1) name?: string;
+  @IsOptional() @IsString() nameTe?: string;
+  @IsOptional() @IsString() description?: string;
+  @IsOptional() @IsString() descriptionTe?: string;
+  @IsOptional() @IsString() imageUrl?: string;
+  @IsOptional() @Type(() => Date) @IsDate() weekStarting?: Date;
+  @IsOptional() @IsString() bannerHeadline?: string;
+  @IsOptional() @IsString() bannerHeadlineTe?: string;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+  @IsOptional() @IsBoolean() availableAnyDay?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SundaySpecialVariantDto)
+  variants?: SundaySpecialVariantDto[];
+}
 
 @ApiTags('sunday-special')
 @Controller('sunday-special')

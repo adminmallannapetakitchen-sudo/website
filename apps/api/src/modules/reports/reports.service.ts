@@ -2,9 +2,24 @@ import { Injectable } from '@nestjs/common';
 import { OrderStatus, PaymentStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
+// Realized sales = everything from CONFIRMED onwards (incl. COD), excluding
+// unpaid PENDING_PAYMENT, CANCELLED and REFUNDED. Shared by the dashboard and
+// the reports so the two never disagree.
+const REALIZED_STATUSES = [
+  OrderStatus.CONFIRMED,
+  OrderStatus.PREPARING,
+  OrderStatus.OUT_FOR_DELIVERY,
+  OrderStatus.DELIVERED,
+];
+
 @Injectable()
 export class ReportsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  /** The `to` date arrives as midnight; make the range inclusive of that whole day. */
+  private endOfDay(to: Date): Date {
+    return new Date(to.getTime() + 24 * 60 * 60 * 1000 - 1);
+  }
 
   async dashboardStats() {
     const now = new Date();
@@ -12,16 +27,6 @@ export class ReportsService {
     const weekStart = new Date(now);
     weekStart.setDate(weekStart.getDate() - 7);
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    // M4: "revenue" must only include realized sales. The old filter
-    // (status != CANCELLED) counted unpaid PENDING_PAYMENT and REFUNDED
-    // orders as revenue, inflating it well above the sales report.
-    const REALIZED_STATUSES = [
-      OrderStatus.CONFIRMED,
-      OrderStatus.PREPARING,
-      OrderStatus.OUT_FOR_DELIVERY,
-      OrderStatus.DELIVERED,
-    ];
 
     const [todayOrders, weekOrders, monthOrders, pendingOrders, totalCustomers] =
       await this.prisma.$transaction([
@@ -41,7 +46,11 @@ export class ReportsService {
           _sum: { total: true },
         }),
         this.prisma.order.count({
-          where: { status: { in: [OrderStatus.CONFIRMED, OrderStatus.PREPARING] } },
+          where: {
+            status: {
+              in: [OrderStatus.CONFIRMED, OrderStatus.PREPARING, OrderStatus.OUT_FOR_DELIVERY],
+            },
+          },
         }),
         this.prisma.user.count({ where: { role: 'CUSTOMER', deletedAt: null } }),
       ]);
@@ -56,10 +65,11 @@ export class ReportsService {
   }
 
   async salesReport(opts: { from: Date; to: Date }) {
+    const to = this.endOfDay(opts.to);
     const orders = await this.prisma.order.findMany({
       where: {
-        placedAt: { gte: opts.from, lte: opts.to },
-        status: { in: [OrderStatus.DELIVERED, OrderStatus.OUT_FOR_DELIVERY] },
+        placedAt: { gte: opts.from, lte: to },
+        status: { in: REALIZED_STATUSES },
       },
       select: { placedAt: true, total: true, paymentMethod: true },
       orderBy: { placedAt: 'asc' },
@@ -67,20 +77,26 @@ export class ReportsService {
 
     // Group by day
     const byDay = new Map<string, { date: string; orders: number; revenue: number }>();
+    const byPaymentMethod = { RAZORPAY: { orders: 0, revenue: 0 }, COD: { orders: 0, revenue: 0 } };
     for (const o of orders) {
       const d = o.placedAt.toISOString().slice(0, 10);
       const slot = byDay.get(d) ?? { date: d, orders: 0, revenue: 0 };
       slot.orders++;
       slot.revenue += Number(o.total);
       byDay.set(d, slot);
+
+      const pm = byPaymentMethod[o.paymentMethod];
+      pm.orders++;
+      pm.revenue += Number(o.total);
     }
 
     return {
       from: opts.from,
-      to: opts.to,
+      to,
       totalOrders: orders.length,
       totalRevenue: orders.reduce((s, o) => s + Number(o.total), 0),
       daily: Array.from(byDay.values()),
+      byPaymentMethod,
     };
   }
 
@@ -89,8 +105,8 @@ export class ReportsService {
     const items = await this.prisma.orderItem.findMany({
       where: {
         order: {
-          placedAt: { gte: opts.from, lte: opts.to },
-          status: { in: [OrderStatus.DELIVERED, OrderStatus.OUT_FOR_DELIVERY] },
+          placedAt: { gte: opts.from, lte: this.endOfDay(opts.to) },
+          status: { in: REALIZED_STATUSES },
         },
       },
       select: { menuItemId: true, qty: true, lineTotal: true, itemSnapshot: true },
@@ -149,7 +165,7 @@ export class ReportsService {
   async couponPerformance(opts: { from: Date; to: Date }) {
     const usage = await this.prisma.couponRedemption.groupBy({
       by: ['couponId'],
-      where: { createdAt: { gte: opts.from, lte: opts.to } },
+      where: { createdAt: { gte: opts.from, lte: this.endOfDay(opts.to) } },
       _count: { _all: true },
       _sum: { discountApplied: true },
     });

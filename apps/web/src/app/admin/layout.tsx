@@ -18,7 +18,6 @@ import {
   Menu,
   X,
   ChevronRight,
-  Bell,
   LogOut,
   ShieldCheck,
 } from 'lucide-react'
@@ -26,6 +25,7 @@ import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth-store'
 import { useKitchenSettings } from '@/lib/hooks'
 import { logout } from '@/lib/auth-actions'
+import { NotificationBell } from '@/components/admin/notification-bell'
 
 type StaffRole = 'OWNER' | 'MANAGER' | 'KITCHEN_STAFF'
 const ALL_STAFF: StaffRole[] = ['OWNER', 'MANAGER', 'KITCHEN_STAFF']
@@ -230,10 +230,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </span>
           </Link>
 
-          <button className="relative p-2 rounded-lg hover:bg-muted">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-brand-red rounded-full" />
-          </button>
+          <NotificationBell />
 
           <Link href="/" className="text-xs text-muted-foreground hover:text-foreground transition-colors hidden sm:block">
             ← View Site

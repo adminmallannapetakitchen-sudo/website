@@ -69,6 +69,7 @@ export default function SundaySpecialPage() {
   const { addItem } = useCartStore()
   const { special, specials, isOrderable, orderOpensAt, isLoading } = useSundaySpecial()
   const { items } = useMenu()
+  const [selectedVariantId, setSelectedVariantId] = useState<string>('')
 
   if (isLoading) {
     return (
@@ -101,31 +102,36 @@ export default function SundaySpecialPage() {
   }
 
   const item = special.menuItem
+  const variants: any[] = item?.variants ?? []
+  const selectedVariant = variants.find((v) => v.id === selectedVariantId) ?? variants[0]
+  const heroPrice = selectedVariant ? Number(selectedVariant.price) : Number(special.specialPrice)
 
-  const addSpecialToCart = (sp: any) => {
+  const addSpecialToCart = (sp: any, variant?: any) => {
     if (!isOrderable) {
-      toast.info('Sunday Special can only be ordered on Sunday — set a reminder!')
+      toast.info('This special can only be ordered on its Sunday — set a reminder!')
       return
     }
     const it = sp.menuItem
-    if (!it?.variants?.[0]) {
+    const v = variant ?? it?.variants?.[0]
+    if (!it || !v) {
       toast.error('This special is not orderable')
       return
     }
     addItem({
-      id: `${it.id}-${it.variants[0].id}`,
+      id: `${it.id}-${v.id}`,
       menuItemId: it.id,
       name: it.name,
       nameTe: it.nameTe,
-      variantId: it.variants[0].id,
-      variantLabel: it.variants[0].label,
-      price: sp.specialPrice,
+      variantId: v.id,
+      variantLabel: v.label,
+      price: Number(v.price),
+      image: it.image,
       isVeg: it.isVeg,
     })
     toast.success(`${it.name} added to cart at special price!`)
   }
 
-  const handleOrderNow = () => addSpecialToCart(special)
+  const handleOrderNow = () => addSpecialToCart(special, selectedVariant)
 
   // Additional scheduled specials for the same Sunday (beyond the hero one).
   const moreSpecials = (specials ?? []).slice(1)
@@ -187,19 +193,37 @@ export default function SundaySpecialPage() {
             </p>
 
             {/* Price */}
-            <div className="flex items-center gap-3 justify-center">
+            <div className="flex items-center gap-2 justify-center">
               <span className="text-4xl font-bold text-brand-gold">
-                {formatCurrency(special.specialPrice)}
+                {formatCurrency(heroPrice)}
               </span>
-              <div className="text-left">
-                <span className="text-white/50 line-through text-lg block">
-                  {formatCurrency(item.variants[0].price)}
-                </span>
-                <span className="text-brand-gold text-xs font-semibold">
-                  Save {formatCurrency(item.variants[0].price - special.specialPrice)}
-                </span>
-              </div>
+              {selectedVariant && (
+                <span className="text-white/70 text-sm self-end mb-1">/ {selectedVariant.label}</span>
+              )}
             </div>
+
+            {/* Variant selector */}
+            {variants.length > 1 && (
+              <div className="flex flex-wrap items-center gap-2 justify-center pt-1">
+                {variants.map((v) => {
+                  const active = (selectedVariant?.id ?? variants[0]?.id) === v.id
+                  return (
+                    <button
+                      key={v.id}
+                      onClick={() => setSelectedVariantId(v.id)}
+                      className={cn(
+                        'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                        active
+                          ? 'bg-white text-brand-red border-white'
+                          : 'bg-white/10 text-white border-white/30 hover:bg-white/20'
+                      )}
+                    >
+                      {language === 'te' ? v.labelTe || v.label : v.label} · {formatCurrency(Number(v.price))}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
 
             {!isOrderable && orderOpensAt && (
               <div className="space-y-3">

@@ -211,6 +211,10 @@ model MenuItem {
   isAvailable              Boolean   @default(true) @map("is_available")
   isBestseller             Boolean   @default(false) @map("is_bestseller")
   isSundaySpecialCandidate Boolean   @default(false) @map("is_sunday_special_candidate")
+  // True for the hidden backing item auto-created by a standalone Sunday Special.
+  // These never appear in the regular menu — they exist only so a Sunday Special
+  // can flow through the normal cart/checkout/order pipeline.
+  isSundaySpecialOnly      Boolean   @default(false) @map("is_sunday_special_only")
   displayOrder             Int       @default(0) @map("display_order")
   deletedAt                DateTime? @map("deleted_at")
   createdAt                DateTime  @default(now()) @map("created_at")
@@ -277,6 +281,8 @@ model SundaySpecial {
   description        String?  @db.Text
   descriptionTe      String?  @map("description_te") @db.Text
   isActive           Boolean  @default(true) @map("is_active")
+  // Override: when true the special is orderable on ANY day, not just its Sunday.
+  availableAnyDay    Boolean  @default(false) @map("available_any_day")
   notificationSentAt DateTime? @map("notification_sent_at")
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")

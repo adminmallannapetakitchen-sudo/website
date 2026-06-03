@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
+import { SUNDAY_SPECIAL_CATEGORY_SLUG } from '../../common/constants';
 
 @Injectable()
 export class CategoriesService {
@@ -8,14 +9,16 @@ export class CategoriesService {
 
   listPublic() {
     return this.prisma.category.findMany({
-      where: { isActive: true, deletedAt: null },
+      where: { isActive: true, deletedAt: null, slug: { not: SUNDAY_SPECIAL_CATEGORY_SLUG } },
       orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }],
     });
   }
 
   listAdmin() {
+    // The hidden category that backs standalone Sunday Specials is system-managed
+    // — keep it out of the categories screen.
     return this.prisma.category.findMany({
-      where: { deletedAt: null },
+      where: { deletedAt: null, slug: { not: SUNDAY_SPECIAL_CATEGORY_SLUG } },
       orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }],
       include: { _count: { select: { menuItems: { where: { deletedAt: null } } } } },
     });

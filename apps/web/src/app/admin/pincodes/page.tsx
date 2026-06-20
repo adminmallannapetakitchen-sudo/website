@@ -77,7 +77,7 @@ export default function AdminPincodesPage() {
         ) : pincodes.length === 0 ? (
           <p className="p-6 text-sm text-muted-foreground text-center">No pincodes yet.</p>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full text-sm min-w-[480px]">
             <thead>
               <tr className="border-b border-border bg-muted/30">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Pincode</th>
@@ -113,7 +113,7 @@ export default function AdminPincodesPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </div>
     </motion.div>

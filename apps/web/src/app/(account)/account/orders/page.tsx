@@ -38,7 +38,7 @@ export default function OrdersPage() {
         </div>
       ) : orders.length === 0 ? (
         <div className="text-center py-20">
-          <div className="text-5xl mb-4">📦</div>
+          <Package className="w-11 h-11 mx-auto mb-4 text-brand-red" strokeWidth={1.5} />
           <p className={cn('text-muted-foreground', language === 'te' ? 'font-telugu' : '')}>
             {t.account.noOrders}
           </p>

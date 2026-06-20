@@ -9,11 +9,11 @@ export const metadata: Metadata = {
     template: '%s | Mallannapeta Kitchen',
   },
   description:
-    'Order authentic Telangana village-style home-cooked meals from a Jagtial kitchen. Fresh Chicken & Rice, Mutton & Rice, Thali Combos and Sunday Specials — delivered hot to your door.',
+    'Order authentic Telangana village-style home-cooked meals from a Jagtial kitchen. Fresh Chicken & Rice, Mutton & Rice, Thali Combos and Sunday Specials, delivered hot to your door.',
   keywords: ['Telangana food', 'Jagtial', 'home delivery', 'village kitchen', 'Telugu food', 'Mallannapeta'],
   openGraph: {
     title: 'Mallannapeta Kitchen',
-    description: 'Taste of Telangana — village-style home-cooked meals from Jagtial.',
+    description: 'Taste of Telangana: village-style home-cooked meals from Jagtial.',
     type: 'website',
   },
   icons: {

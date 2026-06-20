@@ -50,7 +50,7 @@ export const translations = {
     // Sunday Special
     sundaySpecial: {
       title: 'Sunday Special',
-      subtitle: 'A special dish every Sunday — made fresh, served hot',
+      subtitle: 'A special dish every Sunday, made fresh, served hot',
       countdown: 'Available this Sunday',
       endsIn: 'Ends in',
       comingSoon: 'Next Sunday Special Coming Soon',
@@ -163,7 +163,7 @@ export const translations = {
     },
     // Footer
     footer: {
-      tagline: 'Authentic Telangana village-style home-cooked meals — delivered fresh from Jagtial.',
+      tagline: 'Authentic Telangana village-style home-cooked meals, delivered fresh from Jagtial.',
       rights: 'All rights reserved.',
       followUs: 'Follow Us',
       callUs: 'Call Us',
@@ -191,7 +191,7 @@ export const translations = {
     },
     hero: {
       tagline: 'తెలంగాణ రుచులు',
-      subTagline: 'జగిత్యాల గ్రామ వంటశాల నుండి — ఇంటి వంట, మీ ఇంటికే',
+      subTagline: 'జగిత్యాల గ్రామ వంటశాల నుండి, ఇంటి వంట, మీ ఇంటికే',
       cta: 'ఇప్పుడే ఆర్డర్ చేయండి',
       ctaSecondary: 'మెను చూడండి',
       badge: 'ప్రతిరోజూ తాజాగా',
@@ -222,7 +222,7 @@ export const translations = {
     },
     sundaySpecial: {
       title: 'ఆదివారం స్పెషల్',
-      subtitle: 'ప్రతి ఆదివారం ప్రత్యేక వంటకం — తాజాగా, వేడిగా',
+      subtitle: 'ప్రతి ఆదివారం ప్రత్యేక వంటకం, తాజాగా, వేడిగా',
       countdown: 'ఈ ఆదివారం అందుబాటులో',
       endsIn: 'ముగింపు',
       comingSoon: 'తదుపరి ఆదివారం స్పెషల్ త్వరలో',
@@ -328,7 +328,7 @@ export const translations = {
       free: 'ఉచితం',
     },
     footer: {
-      tagline: 'జగిత్యాల నుండి తాజాగా — అసలైన తెలంగాణ గ్రామ వంటలు.',
+      tagline: 'జగిత్యాల నుండి తాజాగా, అసలైన తెలంగాణ గ్రామ వంటలు.',
       rights: 'అన్ని హక్కులూ మాకే.',
       followUs: 'ఫాలో చేయండి',
       callUs: 'కాల్ చేయండి',

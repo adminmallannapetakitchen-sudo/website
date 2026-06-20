@@ -100,7 +100,7 @@ export default function AdminReportsPage() {
         <h2 className="font-semibold text-foreground mb-4">Payment Methods</h2>
         <div className="grid grid-cols-2 gap-4">
           {([
-            { key: 'RAZORPAY', label: 'Online (Razorpay)', color: 'text-green-600 bg-green-50' },
+            { key: 'RAZORPAY', label: 'Online (Cashfree)', color: 'text-green-600 bg-green-50' },
             { key: 'COD', label: 'Cash on Delivery', color: 'text-amber-600 bg-amber-50' },
           ] as const).map((pm) => {
             const d = byPayment[pm.key] ?? { orders: 0, revenue: 0 }

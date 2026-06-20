@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, Tag, ShoppingBag } from 'lucide-react'
+import { Trash2, Tag } from 'lucide-react'
+import { PlusIcon, MinusIcon, ArrowRightIcon, BagIcon, BowlIcon } from '@/components/icons'
 import { useCartStore } from '@/store/cart-store'
 import { useLanguageStore } from '@/store/language-store'
 import { formatCurrency, cn } from '@/lib/utils'
@@ -11,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
+import { BottomNav } from '@/components/layout/bottom-nav'
 import { useKitchenSettings } from '@/lib/hooks'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -46,18 +48,18 @@ export default function CartPage() {
     return (
       <div className="flex flex-col min-h-screen">
         <Header />
-        <main className="flex-1 pt-16 flex items-center justify-center">
+        <main className="flex-1 pt-16 pb-nav flex items-center justify-center">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             className="text-center py-20 px-4"
           >
             <motion.div
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="text-7xl mb-6"
+              animate={{ y: [0, -8, 0] }}
+              transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+              className="mx-auto mb-6 w-20 h-20 rounded-full bg-muted flex items-center justify-center"
             >
-              🛒
+              <BagIcon size={36} className="text-brand-red" />
             </motion.div>
             <h2 className={cn('text-2xl font-bold text-foreground mb-2', language === 'te' ? 'font-telugu' : '')}>
               {t.cart.empty}
@@ -66,13 +68,14 @@ export default function CartPage() {
               {t.cart.emptySubtitle}
             </p>
             <Link href="/menu">
-              <Button size="lg" icon={<ShoppingBag className="w-5 h-5" />}>
+              <Button size="lg" icon={<BowlIcon size={18} />}>
                 <span className={language === 'te' ? 'font-telugu' : ''}>{t.cart.browseMenu}</span>
               </Button>
             </Link>
           </motion.div>
         </main>
         <Footer />
+        <BottomNav />
       </div>
     )
   }
@@ -80,7 +83,7 @@ export default function CartPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="flex-1 pt-16">
+      <main className="flex-1 pt-16 pb-nav">
         <div className="section py-8 md:py-12">
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
@@ -114,7 +117,7 @@ export default function CartPage() {
                           sizes="80px"
                         />
                       ) : (
-                        <div className="flex items-center justify-center h-full text-2xl">🍛</div>
+                        <div className="flex items-center justify-center h-full text-muted-foreground"><BowlIcon size={28} /></div>
                       )}
                     </div>
 
@@ -132,7 +135,7 @@ export default function CartPage() {
                             onClick={() => updateQty(item.id, item.qty - 1)}
                             className="w-7 h-7 flex items-center justify-center rounded-md bg-white hover:bg-brand-red hover:text-white transition-colors"
                           >
-                            <Minus className="w-3 h-3" />
+                            <MinusIcon size={12} />
                           </motion.button>
                           <span className="w-7 text-center text-sm font-semibold">{item.qty}</span>
                           <motion.button
@@ -140,7 +143,7 @@ export default function CartPage() {
                             onClick={() => updateQty(item.id, item.qty + 1)}
                             className="w-7 h-7 flex items-center justify-center rounded-md bg-brand-red text-white hover:bg-brand-red-dark transition-colors"
                           >
-                            <Plus className="w-3 h-3" />
+                            <PlusIcon size={12} />
                           </motion.button>
                         </div>
                         <span className="font-bold text-foreground">{formatCurrency(item.price * item.qty)}</span>
@@ -220,7 +223,7 @@ export default function CartPage() {
                   Coupons &amp; final total are confirmed at checkout.
                 </p>
                 <Link href="/checkout" className="block">
-                  <Button className="w-full" size="lg" iconRight={<ArrowRight className="w-5 h-5" />}>
+                  <Button className="w-full" size="lg" iconRight={<ArrowRightIcon size={18} />}>
                     <span className={language === 'te' ? 'font-telugu' : ''}>{t.cart.checkout}</span>
                   </Button>
                 </Link>
@@ -230,6 +233,7 @@ export default function CartPage() {
         </div>
       </main>
       <Footer />
+      <BottomNav />
     </div>
   )
 }

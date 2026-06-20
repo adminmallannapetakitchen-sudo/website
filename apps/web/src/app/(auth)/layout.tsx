@@ -1,9 +1,10 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { ChiliIcon, ClockIcon, LeafIcon } from '@/components/icons'
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-hero-gradient flex">
+    <div className="min-h-screen bg-hero-gradient lg:flex">
       {/* Left panel — brand (hidden on mobile) */}
       <div className="hidden lg:flex lg:w-1/2 xl:w-2/5 bg-brand-gradient items-center justify-center p-12 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10"
@@ -20,20 +21,20 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <h1 className="text-3xl font-bold font-display">Mallannapeta Kitchen</h1>
             <p className="font-telugu text-xl mt-1 text-white/80">మల్లన్నపేట కిచెన్</p>
             <p className="text-white/70 mt-3 text-sm leading-relaxed max-w-xs mx-auto">
-              Taste of Telangana — village-style home-cooked meals from a Jagtial kitchen, delivered fresh.
+              Taste of Telangana: village-style home-cooked meals from a Jagtial kitchen, delivered fresh.
             </p>
           </div>
-          <div className="flex flex-col gap-2 text-sm text-white/60">
-            <p>🌶️ Slow-cooked, village style</p>
-            <p>🕐 30-45 min delivery</p>
-            <p>💚 Fresh every day, from Jagtial</p>
+          <div className="flex flex-col gap-2.5 text-sm text-white/70">
+            <p className="flex items-center justify-center gap-2"><ChiliIcon size={18} /> Slow-cooked, village style</p>
+            <p className="flex items-center justify-center gap-2"><ClockIcon size={18} /> 30-45 min delivery</p>
+            <p className="flex items-center justify-center gap-2"><LeafIcon size={18} /> Fresh every day, from Jagtial</p>
           </div>
         </div>
       </div>
 
       {/* Right panel — form */}
-      <div className="flex-1 flex items-center justify-center p-6">
-        <div className="w-full max-w-md">
+      <div className="w-full lg:flex-1 lg:min-w-0 flex items-center justify-center p-5 sm:p-6 min-h-screen lg:min-h-0">
+        <div className="w-full min-w-0 mx-auto" style={{ maxWidth: 'min(28rem, calc(100vw - 2.5rem))' }}>
           {/* Mobile logo */}
           <div className="flex justify-center mb-8 lg:hidden">
             <Link href="/" className="flex items-center gap-3">

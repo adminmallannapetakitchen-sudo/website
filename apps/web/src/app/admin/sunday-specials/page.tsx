@@ -263,11 +263,11 @@ export default function AdminSundaySpecialsPage() {
                 <div className="space-y-3 pt-6">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={form.isActive} onChange={(e) => set('isActive', e.target.checked)} className="w-4 h-4 accent-brand-red" />
-                    <span className="text-sm">✅ Active (visible &amp; orderable)</span>
+                    <span className="text-sm">Active (visible &amp; orderable)</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={form.availableAnyDay} onChange={(e) => set('availableAnyDay', e.target.checked)} className="w-4 h-4 accent-brand-red" />
-                    <span className="text-sm">⚡ Available on any day (not just Sunday)</span>
+                    <span className="text-sm">Available on any day (not just Sunday)</span>
                   </label>
                 </div>
               </div>
@@ -291,7 +291,7 @@ export default function AdminSundaySpecialsPage() {
           ) : specials.length === 0 ? (
             <p className="p-6 text-sm text-muted-foreground text-center">No Sunday Specials yet.</p>
           ) : (
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto"><table className="w-full text-sm min-w-[640px]">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Dish</th>
@@ -366,7 +366,7 @@ export default function AdminSundaySpecialsPage() {
                   )
                 })}
               </tbody>
-            </table>
+            </table></div>
           )}
         </div>
       )}

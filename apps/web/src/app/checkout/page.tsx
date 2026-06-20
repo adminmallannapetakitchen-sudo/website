@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { MapPin, CreditCard, Banknote, ChevronRight, Plus, LogIn, Phone } from 'lucide-react'
+import { LockIcon, BagIcon } from '@/components/icons'
 import Link from 'next/link'
 import { useCartStore } from '@/store/cart-store'
 import { useLanguageStore } from '@/store/language-store'
@@ -21,6 +22,7 @@ import { formatCurrency, cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
+import { BottomNav } from '@/components/layout/bottom-nav'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 
@@ -88,9 +90,9 @@ export default function CheckoutPage() {
     return (
       <div className="flex flex-col min-h-screen">
         <Header />
-        <main className="flex-1 pt-16 flex items-center justify-center">
+        <main className="flex-1 pt-16 pb-nav flex items-center justify-center">
           <div className="text-center space-y-4 py-20">
-            <div className="text-5xl">🔒</div>
+            <LockIcon size={44} className="mx-auto text-brand-red" />
             <h1 className="text-2xl font-bold text-foreground">Please log in to checkout</h1>
             <p className="text-muted-foreground">Your cart is saved — log in to place your order.</p>
             <Link href="/login">
@@ -99,6 +101,7 @@ export default function CheckoutPage() {
           </div>
         </main>
         <Footer />
+        <BottomNav />
       </div>
     )
   }
@@ -107,14 +110,15 @@ export default function CheckoutPage() {
     return (
       <div className="flex flex-col min-h-screen">
         <Header />
-        <main className="flex-1 pt-16 flex items-center justify-center">
+        <main className="flex-1 pt-16 pb-nav flex items-center justify-center">
           <div className="text-center space-y-4 py-20">
-            <div className="text-5xl">🛒</div>
+            <BagIcon size={44} className="mx-auto text-brand-red" />
             <h1 className="text-2xl font-bold text-foreground">Your cart is empty</h1>
             <Link href="/menu"><Button size="lg">Browse Menu</Button></Link>
           </div>
         </main>
         <Footer />
+        <BottomNav />
       </div>
     )
   }
@@ -185,16 +189,15 @@ export default function CheckoutPage() {
         idempotencyKey: idemKeyRef.current,
       })
 
-      if (paymentMethod === 'RAZORPAY' && res.razorpay) {
-        if (res.razorpay.keyId === 'rzp_test_mock') {
-          await verifyPayment({
-            razorpayOrderId: res.razorpay.id,
-            razorpayPaymentId: `pay_mock_${Date.now()}`,
-            razorpaySignature: 'mock_signature',
-            internalOrderId: res.order.id,
-          })
+      if (paymentMethod === 'RAZORPAY' && res.cashfree) {
+        if (res.cashfree.paymentSessionId.startsWith('mock_session')) {
+          // Local/dev mock gateway — there's no real Cashfree session, auto-confirm.
+          await verifyPayment({ internalOrderId: res.order.id })
         } else {
-          await openRazorpay(res)
+          await payWithCashfree(res.cashfree)
+          // Cashfree has no client signature — the server confirms by fetching
+          // the order status. Retry briefly to absorb status-propagation lag.
+          await verifyWithRetry(res.order.id)
         }
       }
 
@@ -208,47 +211,39 @@ export default function CheckoutPage() {
     }
   }
 
-  const openRazorpay = (res: any) =>
-    new Promise<void>((resolve, reject) => {
-      const w = window as any
-      const open = () => {
-        const rzp = new w.Razorpay({
-          key: res.razorpay.keyId,
-          order_id: res.razorpay.id,
-          amount: res.razorpay.amount,
-          currency: res.razorpay.currency,
-          name: 'Mallannapeta Kitchen',
-          handler: async (r: any) => {
-            try {
-              await verifyPayment({
-                razorpayOrderId: r.razorpay_order_id,
-                razorpayPaymentId: r.razorpay_payment_id,
-                razorpaySignature: r.razorpay_signature,
-                internalOrderId: res.order.id,
-              })
-              resolve()
-            } catch (e) {
-              reject(e)
-            }
-          },
-          modal: { ondismiss: () => reject(new Error('Payment cancelled')) },
-        })
-        rzp.open()
-      }
-      if (w.Razorpay) open()
-      else {
-        const s = document.createElement('script')
-        s.src = 'https://checkout.razorpay.com/v1/checkout.js'
-        s.onload = open
-        s.onerror = () => reject(new Error('Failed to load Razorpay'))
-        document.body.appendChild(s)
-      }
+  // Open Cashfree checkout in a secure modal on our own site.
+  const payWithCashfree = async (cf: { paymentSessionId: string; mode: 'sandbox' | 'production' }) => {
+    const { load } = await import('@cashfreepayments/cashfree-js')
+    const cashfree = await load({ mode: cf.mode })
+    const result: any = await cashfree.checkout({
+      paymentSessionId: cf.paymentSessionId,
+      redirectTarget: '_modal',
     })
+    if (result?.error) {
+      throw new Error(result.error.message || 'Payment was cancelled')
+    }
+    // success (or ambiguous) — the backend order-status check is the source of truth.
+  }
+
+  // Cashfree can take a moment to mark the order PAID after the modal closes.
+  const verifyWithRetry = async (orderId: string) => {
+    let lastErr: unknown
+    for (let i = 0; i < 3; i++) {
+      try {
+        await verifyPayment({ internalOrderId: orderId })
+        return
+      } catch (e) {
+        lastErr = e
+        if (i < 2) await new Promise((r) => setTimeout(r, 1500))
+      }
+    }
+    throw lastErr
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="flex-1 pt-16">
+      <main className="flex-1 pt-16 pb-nav">
         <div className="section py-8 md:py-12">
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
@@ -321,7 +316,7 @@ export default function CheckoutPage() {
                 </h2>
                 <div className="grid sm:grid-cols-2 gap-3">
                   {([
-                    { id: 'RAZORPAY' as PaymentMethod, icon: CreditCard, title: t.checkout.razorpay, desc: 'UPI · Cards · Netbanking · Wallets' },
+                    { id: 'RAZORPAY' as PaymentMethod, icon: CreditCard, title: language === 'te' ? 'ఆన్‌లైన్ చెల్లింపు' : 'Pay Online', desc: 'UPI · Cards · Netbanking · Wallets' },
                     { id: 'COD' as PaymentMethod, icon: Banknote, title: t.checkout.cod, desc: t.checkout.codNote },
                   ]).map((pm) => (
                     <motion.button
@@ -430,14 +425,15 @@ export default function CheckoutPage() {
                 <span className={language === 'te' ? 'font-telugu' : ''}>{t.checkout.placeOrder}</span>
               </Button>
 
-              <p className="text-xs text-muted-foreground text-center">
-                🔒 Your order &amp; payment information is secure
+              <p className="text-xs text-muted-foreground text-center inline-flex items-center justify-center gap-1.5 w-full">
+                <LockIcon size={13} /> Your order &amp; payment information is secure
               </p>
             </motion.div>
           </div>
         </div>
       </main>
       <Footer />
+      <BottomNav />
     </div>
   )
 }

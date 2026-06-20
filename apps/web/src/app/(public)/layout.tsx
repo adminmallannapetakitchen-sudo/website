@@ -5,7 +5,7 @@ import { FloatingCartBar } from '@/components/shared/floating-cart-bar'
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen paper-grain">
       <Header />
       <main className="flex-1 pt-16 md:pt-18 pb-nav">
         {children}

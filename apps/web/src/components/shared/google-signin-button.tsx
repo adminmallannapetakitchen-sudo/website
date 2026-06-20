@@ -35,10 +35,13 @@ export function GoogleSignInButton({ label }: { label: string }) {
       },
     })
 
+    // GSI accepts a width of 200-400px. Clamp the measured container width so
+    // the rendered iframe can never exceed its parent (a key mobile overflow fix).
+    const w = Math.min(Math.max(ref.current.offsetWidth || 320, 240), 400)
     window.google.accounts.id.renderButton(ref.current, {
       theme: 'outline',
       size: 'large',
-      width: ref.current.offsetWidth || 320,
+      width: w,
       text: 'continue_with',
     })
   }, [scriptLoaded, clientId, router])
@@ -52,7 +55,7 @@ export function GoogleSignInButton({ label }: { label: string }) {
         strategy="afterInteractive"
         onLoad={() => setScriptLoaded(true)}
       />
-      <div ref={ref} className="w-full flex justify-center min-h-[44px]" aria-label={label} />
+      <div ref={ref} className="w-full min-w-0 max-w-full overflow-hidden flex justify-center min-h-[44px]" aria-label={label} />
     </>
   )
 }

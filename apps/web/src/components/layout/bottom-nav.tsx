@@ -1,25 +1,28 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Home, UtensilsCrossed, ShoppingCart, Package, User } from 'lucide-react'
+import { HomeIcon, BowlIcon, BagIcon, ReceiptIcon, UserIcon } from '@/components/icons'
 import { useCartStore } from '@/store/cart-store'
 import { useLanguageStore } from '@/store/language-store'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
-  { href: '/',               icon: Home,           labelEn: 'Home',   labelTe: 'హోమ్',   exact: true  },
-  { href: '/menu',           icon: UtensilsCrossed,labelEn: 'Menu',   labelTe: 'మెను',   exact: false },
-  { href: '/cart',           icon: ShoppingCart,   labelEn: 'Cart',   labelTe: 'కార్ట్', exact: false, isCart: true },
-  { href: '/account/orders', icon: Package,        labelEn: 'Orders', labelTe: 'ఆర్డర్లు',exact: false },
-  { href: '/login',          icon: User,           labelEn: 'Account',labelTe: 'అకౌంట్', exact: false },
+  { href: '/',               icon: HomeIcon,    labelEn: 'Home',   labelTe: 'హోమ్',   exact: true  },
+  { href: '/menu',           icon: BowlIcon,    labelEn: 'Menu',   labelTe: 'మెను',   exact: false },
+  { href: '/cart',           icon: BagIcon,     labelEn: 'Cart',   labelTe: 'కార్ట్', exact: false, isCart: true },
+  { href: '/account/orders', icon: ReceiptIcon, labelEn: 'Orders', labelTe: 'ఆర్డర్లు',exact: false },
+  { href: '/login',          icon: UserIcon,    labelEn: 'Account',labelTe: 'అకౌంట్', exact: false },
 ]
 
 export function BottomNav() {
   const pathname  = usePathname()
   const itemCount = useCartStore((s) => s.itemCount())
   const { language } = useLanguageStore()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
 
   const isActive = (href: string, exact?: boolean) =>
     exact ? pathname === href : pathname.startsWith(href)
@@ -53,7 +56,7 @@ export function BottomNav() {
 
                     {/* Cart count badge */}
                     <AnimatePresence>
-                      {itemCount > 0 && (
+                      {mounted && itemCount > 0 && (
                         <motion.span
                           key={itemCount}
                           initial={{ scale: 0, opacity: 0 }}

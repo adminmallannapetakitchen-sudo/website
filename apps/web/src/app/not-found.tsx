@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Home, Search } from 'lucide-react'
+import { HomeIcon, SearchIcon, BowlIcon } from '@/components/icons'
 import { Button } from '@/components/ui/button'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
@@ -19,11 +19,11 @@ export default function NotFound() {
             className="space-y-6"
           >
             <motion.div
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-              className="text-8xl"
+              animate={{ rotate: [0, 6, -6, 0] }}
+              transition={{ duration: 3, repeat: Infinity, repeatDelay: 3, ease: 'easeInOut' }}
+              className="mx-auto w-24 h-24 rounded-full bg-brand-red/10 flex items-center justify-center"
             >
-              🍛
+              <BowlIcon size={48} className="text-brand-red" />
             </motion.div>
             <div>
               <h1 className="text-6xl font-bold text-brand-red font-display">404</h1>
@@ -34,10 +34,10 @@ export default function NotFound() {
             </div>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link href="/">
-                <Button icon={<Home className="w-4 h-4" />}>Back to Home</Button>
+                <Button icon={<HomeIcon size={16} />}>Back to Home</Button>
               </Link>
               <Link href="/menu">
-                <Button variant="outline" icon={<Search className="w-4 h-4" />}>Browse Menu</Button>
+                <Button variant="outline" icon={<SearchIcon size={16} />}>Browse Menu</Button>
               </Link>
             </div>
           </motion.div>

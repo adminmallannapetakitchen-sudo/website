@@ -144,9 +144,9 @@ export default function NewMenuItemPage() {
           </div>
           <div className="space-y-3 pt-6">
             {[
-              { field: 'isVeg', label: '🌿 Vegetarian' },
-              { field: 'isBestseller', label: '⭐ Mark as Bestseller' },
-              { field: 'isSundaySpecial', label: '⚡ Sunday Special' },
+              { field: 'isVeg', label: 'Vegetarian' },
+              { field: 'isBestseller', label: 'Mark as bestseller' },
+              { field: 'isSundaySpecial', label: 'Sunday Special candidate' },
             ].map(({ field, label }) => (
               <label key={field} className="flex items-center gap-2 cursor-pointer">
                 <input

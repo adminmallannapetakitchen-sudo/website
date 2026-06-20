@@ -54,7 +54,7 @@ export default function AccountPage() {
       <div className="section py-20 text-center text-muted-foreground">
         {!hasHydrated ? 'Loading…' : (
           <div className="space-y-4">
-            <div className="text-5xl">🔒</div>
+            <Lock className="w-11 h-11 mx-auto text-brand-red" strokeWidth={1.5} />
             <p>Please log in to view your account.</p>
             <Link href="/login"><Button icon={<LogIn className="w-4 h-4" />}>Log in</Button></Link>
           </div>

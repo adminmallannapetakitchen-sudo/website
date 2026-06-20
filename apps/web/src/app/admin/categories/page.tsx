@@ -72,7 +72,7 @@ export default function AdminCategoriesPage() {
         ) : categories.length === 0 ? (
           <p className="p-6 text-sm text-muted-foreground text-center">No categories yet.</p>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full text-sm min-w-[520px]">
             <thead>
               <tr className="border-b border-border bg-muted/30">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Category</th>
@@ -101,7 +101,7 @@ export default function AdminCategoriesPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </div>
     </motion.div>

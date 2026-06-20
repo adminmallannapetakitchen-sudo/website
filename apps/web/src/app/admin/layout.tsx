@@ -94,7 +94,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="text-center space-y-3">
-          <div className="text-4xl">🔒</div>
+          <ShieldCheck className="w-10 h-10 mx-auto text-brand-red" strokeWidth={1.5} />
           <p className="text-muted-foreground text-sm">Admin access required.</p>
           <Link href="/login" className="text-brand-red text-sm font-medium hover:underline">
             Go to login →

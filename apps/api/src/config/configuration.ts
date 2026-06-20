@@ -3,6 +3,8 @@ export default () => ({
   port: parseInt(process.env.PORT ?? '4000', 10),
   apiPrefix: process.env.API_PREFIX ?? 'api/v1',
   webUrl: process.env.WEB_URL ?? 'http://localhost:3000',
+  // Public base URL of THIS API (incl. /api/v1), used for Cashfree notify_url.
+  publicApiUrl: process.env.PUBLIC_API_URL ?? '',
   corsOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:3000').split(',').map((o) => o.trim()),
 
   database: {
@@ -33,10 +35,11 @@ export default () => ({
     otpExpiryMinutes: parseInt(process.env.MSG91_OTP_EXPIRY_MINUTES ?? '10', 10),
   },
 
-  razorpay: {
-    keyId: process.env.RAZORPAY_KEY_ID ?? '',
-    keySecret: process.env.RAZORPAY_KEY_SECRET ?? '',
-    webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET ?? '',
+  cashfree: {
+    appId: process.env.CASHFREE_APP_ID ?? '',
+    secretKey: process.env.CASHFREE_SECRET_KEY ?? '',
+    env: process.env.CASHFREE_ENV ?? 'sandbox', // sandbox | production
+    apiVersion: process.env.CASHFREE_API_VERSION ?? '2023-08-01',
   },
 
   cloudinary: {

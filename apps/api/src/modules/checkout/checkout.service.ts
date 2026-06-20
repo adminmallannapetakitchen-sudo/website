@@ -221,23 +221,24 @@ export class CheckoutService {
       }
     }
 
-    // 3. Razorpay order (outside the DB tx to keep the tx short).
-    let razorpayOrder: { id: string; amount: number; currency: string; keyId: string } | null = null;
+    // 3. Cashfree payment session (outside the DB tx to keep the tx short).
+    let cashfree: { paymentSessionId: string; orderRef: string; mode: string } | null = null;
     if (result.order.paymentMethod === PaymentMethod.RAZORPAY) {
       if (isReplay && result.payment?.razorpayOrderId) {
-        // Replay: do NOT create a second Razorpay order — reconstruct from
-        // the stored one so the client can resume the same payment.
-        razorpayOrder = {
-          id: result.payment.razorpayOrderId,
-          amount: Math.round(Number(result.order.total) * 100),
-          currency: 'INR',
-          keyId: this.payments.publicKeyId(),
-        };
+        // Replay: do NOT create a second order — resume the existing Cashfree
+        // order so the client can finish the same payment.
+        cashfree = await this.payments.resumePaymentSession(result.payment.razorpayOrderId);
       } else if (!isReplay) {
-        razorpayOrder = await this.payments.createRazorpayOrder({
+        cashfree = await this.payments.createPaymentSession({
           orderId: result.order.id,
           orderNumber: result.order.orderNumber,
           amount: Number(result.order.total),
+          customer: {
+            id: user.id,
+            name: user.name ?? 'Customer',
+            phone: (user.phoneE164 ?? '').replace(/\D/g, '').slice(-10),
+            email: user.email,
+          },
         });
       }
     } else if (!isReplay) {
@@ -254,7 +255,7 @@ export class CheckoutService {
         total: Number(result.order.total),
         paymentMethod: result.order.paymentMethod,
       },
-      razorpay: razorpayOrder,
+      cashfree,
       idempotentReplay: isReplay,
     };
   }

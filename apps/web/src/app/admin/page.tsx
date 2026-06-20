@@ -132,7 +132,7 @@ export default function AdminDashboard() {
           <a href="/admin/orders" className="text-xs text-brand-red hover:underline">View all →</a>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[640px]">
             <thead>
               <tr className="border-b border-border bg-muted/30">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Order</th>

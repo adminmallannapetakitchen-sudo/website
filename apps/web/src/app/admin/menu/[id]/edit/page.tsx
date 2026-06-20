@@ -155,10 +155,10 @@ export default function EditMenuItemPage() {
           </div>
           <div className="space-y-3 pt-6">
             {[
-              { field: 'isAvailable', label: '✅ Available to order' },
-              { field: 'isVeg', label: '🌿 Vegetarian' },
-              { field: 'isBestseller', label: '⭐ Bestseller' },
-              { field: 'isSundaySpecial', label: '⚡ Sunday Special candidate' },
+              { field: 'isAvailable', label: 'Available to order' },
+              { field: 'isVeg', label: 'Vegetarian' },
+              { field: 'isBestseller', label: 'Bestseller' },
+              { field: 'isSundaySpecial', label: 'Sunday Special candidate' },
             ].map(({ field, label }) => (
               <label key={field} className="flex items-center gap-2 cursor-pointer">
                 <input

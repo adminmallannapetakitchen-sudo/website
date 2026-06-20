@@ -55,7 +55,7 @@ export default function ForgotPasswordPage() {
           animate={{ opacity: 1, scale: 1 }}
           className="text-center space-y-4"
         >
-          <div className="text-5xl">📧</div>
+          <Mail className="w-12 h-12 mx-auto text-brand-red" strokeWidth={1.5} />
           <h1 className={cn('text-xl font-bold text-foreground', language === 'te' ? 'font-telugu' : '')}>
             {language === 'te' ? 'ఇమెయిల్ పంపబడింది!' : 'Email Sent!'}
           </h1>

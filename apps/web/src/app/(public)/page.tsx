@@ -1,288 +1,256 @@
 'use client'
 
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion, useInView } from 'framer-motion'
-import { ArrowRight, ChefHat, Flame, Clock, Shield, Star, Sparkles, Phone } from 'lucide-react'
-import { Hero } from '@/components/shared/hero'
-import { MenuCard } from '@/components/menu/menu-card'
+import { IngredientJourney } from '@/components/home/ingredient-journey'
+import { BiryaniFinale } from '@/components/home/biryani-finale'
+import {
+  SparkIcon, FlameIcon, ClockIcon, LeafIcon, ArrowRightIcon, ArrowUpRightIcon,
+  StarIcon, PinIcon,
+} from '@/components/icons'
 import { useLanguageStore } from '@/store/language-store'
-import { useMenu, useSundaySpecial } from '@/lib/hooks'
-import { kitchenInfo } from '@/lib/mock-data'
+import { useMenu, useSundaySpecial, useKitchenSettings } from '@/lib/hooks'
+import { FOOD, cardImage } from '@/lib/food-images'
 import { formatCurrency, cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
 
-/* ── Animate-in wrapper ── */
+const EASE = [0.23, 1, 0.32, 1] as const
+
+function Section({ children, className, id }: { children: React.ReactNode; className?: string; id?: string }) {
+  return (
+    <section
+      id={id}
+      className={cn('snap-section relative z-10 md:min-h-[100svh] md:flex md:flex-col md:justify-center py-20 md:py-24', className)}
+    >
+      {children}
+    </section>
+  )
+}
+
 function Reveal({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
   const ref = useRef<HTMLDivElement>(null)
-  const inView = useInView(ref, { once: true, margin: '-60px' })
+  const inView = useInView(ref, { once: true, margin: '-15% 0px' })
   return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 32 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.55, ease: [0.25, 0.1, 0.25, 1], delay }}
-      className={className}
-    >
+    <motion.div ref={ref} initial={{ opacity: 0, y: 30 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.7, ease: EASE, delay }} className={className}>
       {children}
     </motion.div>
   )
 }
 
-const features = [
-  {
-    icon: ChefHat, emoji: '👨‍🍳',
-    titleEn: 'Home-Style',  titleTe: 'ఇంటి వంట',
-    descEn: 'Family recipes passed down through generations.',
-    descTe: 'తరాల నుండి వచ్చిన కుటుంబ వంటకాలు.',
-    bg: 'bg-brand-red/8',  iconColor: 'text-brand-red',  border: 'border-brand-red/15',
-  },
-  {
-    icon: Flame, emoji: '🔥',
-    titleEn: 'Fresh Daily',  titleTe: 'రోజూ తాజాగా',
-    descEn: 'New batches prepared every morning — never reheated.',
-    descTe: 'ప్రతి ఉదయం తాజా బ్యాచ్‌లు — ఎప్పుడూ పాత కాదు.',
-    bg: 'bg-brand-saffron/8', iconColor: 'text-brand-saffron', border: 'border-brand-saffron/15',
-  },
-  {
-    icon: Clock, emoji: '⚡',
-    titleEn: '30-45 Min',  titleTe: '30-45 నిమిషాలు',
-    descEn: 'Hot meals delivered fast to your doorstep.',
-    descTe: 'వేడి వంటలు మీ ఇంటికి వేగంగా.',
-    bg: 'bg-brand-gold/8',  iconColor: 'text-amber-600',  border: 'border-brand-gold/20',
-  },
-  {
-    icon: Shield, emoji: '✅',
-    titleEn: 'Safe & Hygienic', titleTe: 'సురక్షితం & పరిశుభ్రం',
-    descEn: 'Strict hygiene standards, safely packed every order.',
-    descTe: 'కఠిన పరిశుభ్రతా ప్రమాణాలు, సురక్షితంగా ప్యాక్.',
-    bg: 'bg-green-500/8',  iconColor: 'text-green-600',  border: 'border-green-500/15',
-  },
-]
-
-const testimonials = [
-  { name: 'Suresh K.',   stars: 5, text: "Best mutton curry in Jagtial! Tastes exactly like my grandma's village cooking. Order twice a week now." },
-  { name: 'Lakshmi P.', stars: 5, text: 'The Thali Combo is a complete meal. Always arrives hot and fresh. Great value for the whole family.' },
-  { name: 'Ravi M.',     stars: 5, text: 'Sunday Thalakaya is a must-try! Real Telangana village flavor. Already ordered 3 Sundays in a row.' },
-]
-
 export default function HomePage() {
-  const { t, language } = useLanguageStore()
+  const { language } = useLanguageStore()
   const { items } = useMenu()
-  const featuredItems = items.slice(0, 4)
   const { special: sunday } = useSundaySpecial()
+  const { settings } = useKitchenSettings()
+  const kitchenOpen = settings ? !!settings.isOpen : false
+  const pageRef = useRef<HTMLDivElement>(null)
+
+  // Turn on full-screen snap only on this page (CSS gates it to desktop + motion-ok).
+  useEffect(() => {
+    document.documentElement.classList.add('home-snap')
+    return () => document.documentElement.classList.remove('home-snap')
+  }, [])
+
+  const signature = (items.length ? items.filter((i) => i.isBestseller).concat(items) : []).slice(0, 3)
+
+  const heroStagger = { hidden: {}, show: { transition: { staggerChildren: 0.09, delayChildren: 0.1 } } }
+  const heroItem = { hidden: { opacity: 0, y: 26 }, show: { opacity: 1, y: 0, transition: { duration: 0.75, ease: EASE } } }
 
   return (
-    <>
-      <Hero />
+    <div ref={pageRef} className="relative bg-hero-gradient">
+      <IngredientJourney targetRef={pageRef} />
 
-      {/* ── Feature pills strip ── */}
-      <section className="section py-10 md:py-14">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-          {features.map((f, i) => (
-            <Reveal key={i} delay={i * 0.08}>
-              <div className={cn(
-                'rounded-2xl p-4 md:p-5 border transition-all duration-300 hover:-translate-y-1 hover:shadow-card',
-                f.bg, f.border
-              )}>
-                <span className="text-2xl md:text-3xl block mb-2">{f.emoji}</span>
-                <h3 className={cn(
-                  'font-bold text-sm md:text-base text-foreground',
-                  language === 'te' ? 'font-telugu text-xs md:text-sm' : ''
-                )}>
-                  {language === 'te' ? f.titleTe : f.titleEn}
-                </h3>
-                <p className={cn(
-                  'text-xs text-muted-foreground mt-1 leading-relaxed hidden md:block',
-                  language === 'te' ? 'font-telugu' : ''
-                )}>
-                  {language === 'te' ? f.descTe : f.descEn}
-                </p>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </section>
+      {/* ───────── 01 · HERO ───────── */}
+      <Section className="md:justify-center">
+        <div className="section text-center">
+          <motion.div variants={heroStagger} initial="hidden" animate="show" className="flex flex-col items-center">
+            <motion.span variants={heroItem} className="eyebrow">
+              <SparkIcon size={15} /> {language === 'te' ? 'జగిత్యాల · తెలంగాణ' : 'Jagtial · Telangana'}
+            </motion.span>
 
-      {/* ── Sunday Special banner ── */}
-      {sunday && (
-        <section className="section pb-10 md:pb-14">
-          <Reveal>
-            <div className="relative rounded-3xl overflow-hidden bg-brand-gradient shadow-brand-lg">
-              {/* Animated background blobs */}
-              <div className="absolute inset-0 overflow-hidden">
-                {[...Array(5)].map((_, i) => (
-                  <motion.div
-                    key={i}
-                    className="absolute rounded-full bg-white/8"
-                    style={{ width: 80 + i * 50, height: 80 + i * 50, left: `${i * 22}%`, top: `${(i % 3) * 35}%` }}
-                    animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0.6, 0.3] }}
-                    transition={{ duration: 3 + i * 0.6, repeat: Infinity }}
-                  />
-                ))}
-              </div>
-
-              <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-5 p-6 md:p-8 justify-between">
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-brand-gold animate-bounce-subtle" />
-                    <span className={cn('text-sm font-bold text-white/90 uppercase tracking-wide', language === 'te' ? 'font-telugu normal-case' : '')}>
-                      {t.sundaySpecial.title}
-                    </span>
-                  </div>
-                  <h2 className={cn('text-2xl md:text-3xl font-bold text-white', language === 'te' ? 'font-telugu' : 'font-display')}>
-                    {language === 'te' ? sunday.menuItem.nameTe : sunday.menuItem.name}
-                  </h2>
-                  <p className="text-white/75 text-sm max-w-xs">
-                    {language === 'te' ? sunday.menuItem.descriptionTe : sunday.menuItem.description}
-                  </p>
-                  <div className="flex items-center gap-3 pt-1">
-                    <span className="text-2xl font-extrabold text-brand-gold">
-                      {formatCurrency(sunday.specialPrice)}
-                    </span>
-                    <span className="text-white/50 line-through text-sm">
-                      {formatCurrency(sunday.menuItem.variants[0].price)}
-                    </span>
-                    <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-1 rounded-full">
-                      Save {formatCurrency(sunday.menuItem.variants[0].price - sunday.specialPrice)}
-                    </span>
-                  </div>
-                </div>
-                <Link href="/sunday-special" className="flex-shrink-0">
-                  <Button variant="gold" size="lg" iconRight={<ArrowRight className="w-5 h-5" />}
-                    className="!px-6 shadow-warm-lg hover:shadow-warm"
-                  >
-                    <span className={language === 'te' ? 'font-telugu' : ''}>
-                      {language === 'te' ? 'ఆర్డర్ చేయండి' : 'Order Now'}
-                    </span>
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </Reveal>
-        </section>
-      )}
-
-      {/* ── Featured menu ── */}
-      <section className="section pb-12 md:pb-20">
-        <Reveal className="flex items-end justify-between mb-6 md:mb-8">
-          <div>
-            <h2 className={cn('section-title', language === 'te' ? 'font-telugu text-2xl md:text-3xl' : '')}>
-              {language === 'te' ? 'మా మెను' : 'Our Menu'}
-            </h2>
-            <p className={cn('section-subtitle', language === 'te' ? 'font-telugu' : '')}>
-              {language === 'te' ? 'తాజాగా వండిన వంటలు' : 'Freshly prepared every day'}
-            </p>
-          </div>
-          <Link href="/menu" className="flex-shrink-0">
-            <Button variant="outline" size="sm" iconRight={<ArrowRight className="w-4 h-4" />}>
-              <span className={language === 'te' ? 'font-telugu text-xs' : ''}>{t.common.viewAll}</span>
-            </Button>
-          </Link>
-        </Reveal>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
-          {featuredItems.map((item, i) => (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-40px' }}
-              transition={{ delay: i * 0.1, duration: 0.5 }}
+            <motion.h1
+              variants={heroItem}
+              className={cn(
+                'mt-5 font-display font-bold text-foreground tracking-tight leading-[0.98] text-balance break-words',
+                'text-[clamp(2.05rem,9vw,7rem)] sm:leading-[0.95]',
+                language === 'te' ? 'font-telugu leading-tight' : '',
+              )}
             >
-              <MenuCard {...item} />
+              {language === 'te' ? (
+                <>నెమ్మదిగా వండిన<br /><span className="text-brand-red">తెలంగాణ రుచి.</span></>
+              ) : (
+                <>Slow-cooked<br /><span className="text-brand-red">Telangana.</span></>
+              )}
+            </motion.h1>
+
+            <motion.p variants={heroItem} className={cn('mt-6 text-base md:text-lg text-foreground/60 max-w-[40ch] leading-relaxed', language === 'te' ? 'font-telugu' : '')}>
+              {language === 'te'
+                ? 'జగిత్యాల ఇంటి వంటశాల నుండి కుటుంబ వంటకాలు, తాజాగా మీ ఇంటికే.'
+                : 'Family recipes from a home kitchen in Jagtial, brought fresh to your door.'}
+            </motion.p>
+
+            <motion.div variants={heroItem} className="mt-9 flex flex-col sm:flex-row gap-3">
+              <Link href="/menu" className="btn-brand px-8 py-4 text-base justify-center">
+                {language === 'te' ? 'మెను చూడండి' : 'See the menu'} <ArrowRightIcon size={18} />
+              </Link>
+              <Link href="/sunday-special" className="btn-outline px-8 py-4 text-base justify-center">
+                {language === 'te' ? 'ఆదివారం స్పెషల్' : 'Sunday Special'}
+              </Link>
             </motion.div>
-          ))}
-        </div>
 
-        <Reveal delay={0.2} className="text-center mt-8">
-          <Link href="/menu">
-            <Button size="lg" variant="outline" iconRight={<ArrowRight className="w-5 h-5" />}
-              className="!px-8"
-            >
-              <span className={language === 'te' ? 'font-telugu' : ''}>
-                {language === 'te' ? 'పూర్తి మెను చూడండి' : 'View Full Menu'}
+            <motion.div variants={heroItem} className="mt-8 flex items-center gap-5 text-sm text-foreground/55">
+              <span className="flex items-center gap-1.5"><StarIcon filled size={16} className="text-brand-gold" /><b className="text-foreground/80">4.9</b></span>
+              <span className="w-px h-4 bg-border" />
+              <span className="flex items-center gap-1.5"><ClockIcon size={16} className="text-brand-saffron" /><b className="text-foreground/80">30-45</b> {language === 'te' ? 'నిమి' : 'min'}</span>
+              <span className="w-px h-4 bg-border" />
+              <span className={cn('flex items-center gap-1.5 font-medium', kitchenOpen ? 'text-green-700' : 'text-red-600')}>
+                <span className={cn('w-2 h-2 rounded-full', kitchenOpen ? 'bg-green-600' : 'bg-red-500')} />
+                {kitchenOpen ? (language === 'te' ? 'తెరిచి' : 'Open') : (language === 'te' ? 'మూసి' : 'Closed')}
               </span>
-            </Button>
-          </Link>
-        </Reveal>
-      </section>
+            </motion.div>
+          </motion.div>
+        </div>
+      </Section>
 
-      {/* ── Testimonials ── */}
-      <section className="bg-foreground">
-        <div className="section py-14 md:py-20">
-          <Reveal className="text-center mb-10">
-            <h2 className={cn('text-2xl md:text-3xl font-bold text-white', language === 'te' ? 'font-telugu' : 'font-display')}>
-              {language === 'te' ? 'మా వినియోగదారులు చెప్పేది' : 'What Our Customers Say'}
-            </h2>
-            <p className="text-white/50 text-sm mt-2">
-              {language === 'te' ? 'నిజమైన అభిప్రాయాలు' : 'Real reviews from real customers'}
+      {/* ───────── 02 · PROMISE ───────── */}
+      <Section>
+        <div className="section">
+          <Reveal>
+            <p className="eyebrow mb-6">{language === 'te' ? 'మా మాట' : 'Our promise'}</p>
+            <p className={cn('font-display font-medium text-foreground tracking-tight max-w-[16ch] text-[clamp(2rem,6vw,4rem)] leading-[1.12]', language === 'te' ? 'font-telugu leading-snug max-w-[18ch]' : '')}>
+              {language === 'te' ? (
+                <>ఇంట్లో వండినట్టే. <span className="text-foreground/40">ఆ ఉదయమే తాజాగా, ఎప్పుడూ పాతది కాదు.</span></>
+              ) : (
+                <>Cooked like home. <span className="text-foreground/40">Fresh that morning, never the day before.</span></>
+              )}
             </p>
           </Reveal>
-          <div className="grid sm:grid-cols-3 gap-5">
-            {testimonials.map((r, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.12 }}
-                className="bg-white/6 rounded-2xl p-5 border border-white/10 hover:bg-white/10 transition-colors"
-              >
-                <div className="flex gap-0.5 mb-3">
-                  {[...Array(r.stars)].map((_, j) => (
-                    <Star key={j} className="w-4 h-4 fill-brand-gold text-brand-gold" />
-                  ))}
-                </div>
-                <p className="text-white/80 text-sm leading-relaxed">"{r.text}"</p>
-                <div className="flex items-center gap-2 mt-4">
-                  <div className="w-7 h-7 rounded-full bg-brand-gradient flex items-center justify-center text-white text-xs font-bold">
-                    {r.name[0]}
+        </div>
+      </Section>
+
+      {/* ───────── 03 · SIGNATURE DISHES ───────── */}
+      <Section>
+        <div className="section w-full">
+          <Reveal className="flex items-end justify-between gap-4 mb-8 md:mb-12">
+            <h2 className={cn('section-title', language === 'te' ? 'font-telugu' : '')}>
+              {language === 'te' ? 'జనం ఇష్టపడేవి' : 'What people order'}
+            </h2>
+            <Link href="/menu" className="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold text-foreground/70 hover:text-brand-red transition-colors shrink-0">
+              {language === 'te' ? 'మెను' : 'Full menu'} <ArrowUpRightIcon size={16} />
+            </Link>
+          </Reveal>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {(signature.length ? signature : [null, null, null]).map((d: any, i: number) => (
+              <Reveal key={d?.id ?? i} delay={i * 0.12}>
+                <Link href="/menu" className="group block">
+                  <div className="relative aspect-[4/5] rounded-[1.5rem] overflow-hidden shadow-card">
+                    {d ? (
+                      <Image src={d.image || cardImage(d.id)} alt={d.name} fill sizes="(max-width:640px) 90vw, 30vw" className="object-cover transition-transform duration-700 ease-out group-hover:scale-105" />
+                    ) : (
+                      <div className="absolute inset-0 skeleton" />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-transparent to-transparent" />
+                    {d && (
+                      <div className="absolute inset-x-0 bottom-0 p-5 flex items-end justify-between gap-3">
+                        <div>
+                          <h3 className={cn('text-white font-semibold leading-tight text-xl', language === 'te' ? 'font-telugu' : 'font-display')}>
+                            {language === 'te' ? d.nameTe : d.name}
+                          </h3>
+                          <p className="text-white/75 text-sm mt-0.5">{formatCurrency(d.variants?.[0]?.price ?? 0)}</p>
+                        </div>
+                        <span className="w-9 h-9 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center text-white transition-colors group-hover:bg-brand-red shrink-0">
+                          <ArrowUpRightIcon size={18} />
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-white/60 text-xs font-medium">{r.name}</p>
-                </div>
-              </motion.div>
+                </Link>
+              </Reveal>
             ))}
           </div>
         </div>
-      </section>
+      </Section>
 
-      {/* ── CTA strip — contact / order ── */}
-      <section className="section py-14 md:py-20">
-        <Reveal>
-          <div className="rounded-3xl bg-hero-gradient border border-border p-8 md:p-12 text-center shadow-card">
-            <span className="text-4xl">🍛</span>
-            <h2 className={cn('text-2xl md:text-3xl font-bold text-foreground mt-4 mb-3', language === 'te' ? 'font-telugu' : 'font-display')}>
-              {language === 'te' ? 'ఆకలేస్తోందా? ఆర్డర్ చేయండి!' : 'Hungry? Order Now!'}
-            </h2>
-            <p className={cn('text-muted-foreground mb-7 max-w-md mx-auto', language === 'te' ? 'font-telugu' : '')}>
-              {language === 'te'
-                ? '30-45 నిమిషాల్లో మీ ఇంటికి తాజా ఆహారం. రోజూ తాజాగా వండుతాం.'
-                : 'Fresh Telangana village meals at your door in 30-45 minutes. Slow-cooked fresh every single day.'}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link href="/menu">
-                <Button size="xl" icon={<Flame className="w-5 h-5" />} iconRight={<ArrowRight className="w-5 h-5" />}
-                  className="!px-10 shadow-brand-lg"
-                >
-                  <span className={language === 'te' ? 'font-telugu' : ''}>
-                    {language === 'te' ? 'ఇప్పుడే ఆర్డర్ చేయండి' : 'Order Now'}
-                  </span>
-                </Button>
-              </Link>
-              <a href={`tel:${kitchenInfo.phone}`}>
-                <Button variant="outline" size="xl" icon={<Phone className="w-5 h-5" />}
-                  className="!px-10"
-                >
-                  <span className={language === 'te' ? 'font-telugu' : ''}>
-                    {language === 'te' ? 'కాల్ చేయండి' : 'Call Us'}
-                  </span>
-                </Button>
-              </a>
-            </div>
+      {/* ───────── 04 · SUNDAY ───────── */}
+      {sunday && (
+        <Section className="md:!min-h-[90svh]">
+          <div className="section w-full">
+            <Reveal>
+              <div className="relative overflow-hidden rounded-[2rem] bg-brand-red text-white grid lg:grid-cols-2 gap-8 items-center p-7 md:p-12">
+                <span aria-hidden className="font-telugu pointer-events-none select-none absolute -left-4 -top-12 text-[24vw] leading-none text-white/[0.06]">ఆది</span>
+                <div className="relative">
+                  <span className="eyebrow text-brand-gold"><StarIcon filled size={14} /> {language === 'te' ? 'ఆదివారం స్పెషల్' : 'Sunday Special'}</span>
+                  <h2 className={cn('mt-4 font-display font-bold leading-[0.98] text-[clamp(2rem,5vw,3.6rem)]', language === 'te' ? 'font-telugu leading-tight' : '')}>
+                    {language === 'te' ? sunday.menuItem?.nameTe : sunday.menuItem?.name}
+                  </h2>
+                  <p className={cn('mt-4 text-white/75 max-w-[42ch] leading-relaxed', language === 'te' ? 'font-telugu' : '')}>
+                    {language === 'te' ? sunday.menuItem?.descriptionTe : sunday.menuItem?.description}
+                  </p>
+                  <div className="mt-6 flex items-center gap-3">
+                    <span className="text-3xl font-bold text-brand-gold font-display">{formatCurrency(sunday.specialPrice)}</span>
+                    <span className="text-xs font-semibold uppercase tracking-[0.16em] text-white/80 border border-white/30 px-3 py-1.5 rounded-full">{language === 'te' ? 'ఆదివారం మాత్రమే' : 'This Sunday only'}</span>
+                  </div>
+                  <Link href="/sunday-special" className="mt-7 inline-flex items-center gap-2 btn-brand bg-white text-brand-red hover:bg-brand-gold hover:text-[#3A2A0E] px-7 py-3.5 text-base">
+                    {language === 'te' ? 'చూడండి' : 'See this week'} <ArrowRightIcon size={18} />
+                  </Link>
+                </div>
+                <div className="relative aspect-[5/4] rounded-[1.5rem] overflow-hidden shadow-float rotate-[1.5deg]">
+                  <Image src={sunday.menuItem?.image || FOOD.sunday} alt={sunday.menuItem?.name ?? 'Sunday Special'} fill sizes="(max-width:1024px) 80vw, 480px" className="object-cover" />
+                </div>
+              </div>
+            </Reveal>
           </div>
-        </Reveal>
-      </section>
-    </>
+        </Section>
+      )}
+
+      {/* ───────── 05 · WHY ───────── */}
+      <Section>
+        <div className="section w-full">
+          <Reveal className="max-w-2xl mb-10 md:mb-14">
+            <h2 className={cn('section-title', language === 'te' ? 'font-telugu' : '')}>
+              {language === 'te' ? 'ఎందుకు మల్లన్నపేట' : 'Why Mallannapeta'}
+            </h2>
+          </Reveal>
+          <div className="grid md:grid-cols-3 md:divide-x divide-border">
+            {[
+              { Icon: FlameIcon, en: 'Cooked fresh, daily', te: 'రోజూ తాజాగా', dEn: 'New batches every morning. Never reheated, never from yesterday.', dTe: 'ప్రతి ఉదయం తాజా వంట.' },
+              { Icon: ClockIcon, en: 'Hot in 30-45 min', te: '30-45 నిమిషాల్లో', dEn: 'Packed with care and delivered hot, straight to your door.', dTe: 'వేడిగా మీ ఇంటికే.' },
+              { Icon: LeafIcon, en: 'Clean & hygienic', te: 'పరిశుభ్రం', dEn: 'Strict hygiene, every order packed safely.', dTe: 'కఠిన పరిశుభ్రత.' },
+            ].map(({ Icon, en, te, dEn, dTe }, i) => (
+              <Reveal key={i} delay={i * 0.1} className="md:px-8 first:md:pl-0 py-6 md:py-0">
+                <Icon size={26} className="text-brand-red" />
+                <h3 className={cn('mt-4 text-lg font-semibold text-foreground', language === 'te' ? 'font-telugu' : 'font-display')}>{language === 'te' ? te : en}</h3>
+                <p className={cn('mt-1.5 text-sm text-muted-foreground leading-relaxed max-w-[34ch]', language === 'te' ? 'font-telugu' : '')}>{language === 'te' ? dTe : dEn}</p>
+              </Reveal>
+            ))}
+          </div>
+          <Reveal delay={0.1} className="mt-12 flex items-center gap-2 text-sm text-muted-foreground">
+            <PinIcon size={16} className="text-brand-red" /> {language === 'te' ? 'జగిత్యాల, తెలంగాణ' : 'Jagtial, Telangana'}
+          </Reveal>
+        </div>
+      </Section>
+
+      {/* ───────── 06 · CTA ───────── */}
+      <Section className="md:!min-h-screen">
+        <div className="section text-center">
+          <BiryaniFinale />
+          <Reveal>
+            <h2 className={cn('mt-2 font-display font-bold text-foreground tracking-tight leading-[1] text-[clamp(2.2rem,9vw,6rem)] break-words', language === 'te' ? 'font-telugu leading-tight' : '')}>
+              {language === 'te' ? 'ఆకలేస్తోందా?' : 'Hungry now?'}
+            </h2>
+            <p className={cn('mt-5 text-lg text-foreground/60 max-w-md mx-auto', language === 'te' ? 'font-telugu' : '')}>
+              {language === 'te' ? 'మెను చూసి ఆర్డర్ చేయండి. 30-45 నిమిషాల్లో మీ ఇంటికే.' : 'Browse the menu and order. At your door in 30-45 minutes.'}
+            </p>
+            <div className="mt-9 flex flex-col sm:flex-row gap-3 justify-center">
+              <Link href="/menu" className="btn-brand px-9 py-4 text-base justify-center">
+                {language === 'te' ? 'మెను చూడండి' : 'See the menu'} <ArrowRightIcon size={18} />
+              </Link>
+            </div>
+          </Reveal>
+        </div>
+      </Section>
+    </div>
   )
 }

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { Sparkles, Bell, Clock, Zap, ArrowRight } from 'lucide-react'
+import { PotIcon, BowlIcon } from '@/components/icons'
 import { MenuCard } from '@/components/menu/menu-card'
 import Link from 'next/link'
 import { useLanguageStore } from '@/store/language-store'
@@ -74,7 +75,7 @@ export default function SundaySpecialPage() {
   if (isLoading) {
     return (
       <div className="section py-20 text-center text-muted-foreground">
-        <div className="animate-pulse text-5xl mb-4">🍲</div>
+        <BowlIcon size={44} className="mx-auto mb-4 text-brand-red animate-pulse" />
         Loading…
       </div>
     )
@@ -83,7 +84,7 @@ export default function SundaySpecialPage() {
   if (!special) {
     return (
       <div className="section py-20 text-center space-y-4">
-        <div className="text-6xl">🗓️</div>
+        <PotIcon size={52} className="mx-auto text-brand-red" />
         <h1 className={cn('text-2xl font-bold text-foreground', language === 'te' ? 'font-telugu' : 'font-display')}>
           {language === 'te' ? 'ఈ ఆదివారం స్పెషల్ ఇంకా ప్రకటించలేదు' : 'No Sunday Special active right now'}
         </h1>
@@ -287,9 +288,9 @@ export default function SundaySpecialPage() {
 
         <div className="grid sm:grid-cols-3 gap-6">
           {[
-            { icon: '🔔', title: 'Get Notified', titleTe: 'నోటిఫికేషన్ పొందండి', desc: 'Enable push notifications to get Sunday morning alerts.', descTe: 'ఆదివారం ఉదయం అలెర్ట్‌లు పొందడానికి పుష్ నోటిఫికేషన్లను ఎనేబుల్ చేయండి.' },
-            { icon: '🍽️', title: 'Special Dish', titleTe: 'ప్రత్యేక వంటకం', desc: 'A different traditional dish every Sunday — only available that day.', descTe: 'ప్రతి ఆదివారం ఒక భిన్నమైన సంప్రదాయ వంటకం — ఆ రోజు మాత్రమే.' },
-            { icon: '⚡', title: 'Special Price', titleTe: 'ప్రత్యేక ధర', desc: 'Sunday Specials are offered at a discounted price. Limited time only.', descTe: 'ఆదివారం స్పెషల్‌లు తక్కువ ధరలో అందిస్తారు. పరిమిత సమయం మాత్రమే.' },
+            { Icon: Bell, title: 'Get Notified', titleTe: 'నోటిఫికేషన్ పొందండి', desc: 'Enable push notifications to get Sunday morning alerts.', descTe: 'ఆదివారం ఉదయం అలెర్ట్‌లు పొందడానికి పుష్ నోటిఫికేషన్లను ఎనేబుల్ చేయండి.' },
+            { Icon: Sparkles, title: 'Special Dish', titleTe: 'ప్రత్యేక వంటకం', desc: 'A different traditional dish every Sunday, only available that day.', descTe: 'ప్రతి ఆదివారం ఒక భిన్నమైన సంప్రదాయ వంటకం, ఆ రోజు మాత్రమే.' },
+            { Icon: Zap, title: 'Special Price', titleTe: 'ప్రత్యేక ధర', desc: 'Sunday Specials are offered at a discounted price. Limited time only.', descTe: 'ఆదివారం స్పెషల్‌లు తక్కువ ధరలో అందిస్తారు. పరిమిత సమయం మాత్రమే.' },
           ].map((step, i) => (
             <motion.div
               key={i}
@@ -299,7 +300,7 @@ export default function SundaySpecialPage() {
               transition={{ delay: i * 0.15 }}
               className="card p-5 text-center"
             >
-              <div className="text-4xl mb-3">{step.icon}</div>
+              <div className="mb-3 flex justify-center"><step.Icon className="w-7 h-7 text-brand-red" strokeWidth={1.5} /></div>
               <h3 className={cn('font-semibold text-foreground mb-1', language === 'te' ? 'font-telugu' : '')}>
                 {language === 'te' ? step.titleTe : step.title}
               </h3>
@@ -328,7 +329,7 @@ export default function SundaySpecialPage() {
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={it.image} alt={it.name} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="flex items-center justify-center h-full text-5xl">🍲</div>
+                      <div className="flex items-center justify-center h-full text-muted-foreground"><BowlIcon size={40} /></div>
                     )}
                   </div>
                   <div className="p-4 flex-1 flex flex-col">

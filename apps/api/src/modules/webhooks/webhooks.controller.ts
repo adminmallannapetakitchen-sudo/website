@@ -7,20 +7,21 @@ import { PaymentsService } from '../payments/payments.service';
 
 @ApiTags('webhooks')
 @Controller('webhooks')
-// L1: Razorpay retries webhooks aggressively; never rate-limit them away.
+// L1: Cashfree retries webhooks aggressively; never rate-limit them away.
 @SkipThrottle()
 export class WebhooksController {
   constructor(private readonly payments: PaymentsService) {}
 
   @Public()
-  @Post('razorpay')
+  @Post('cashfree')
   @HttpCode(200)
-  async razorpay(
+  async cashfree(
     @Req() req: RawBodyRequest<Request>,
-    @Headers('x-razorpay-signature') signature: string,
+    @Headers('x-webhook-signature') signature: string,
+    @Headers('x-webhook-timestamp') timestamp: string,
   ) {
     if (!req.rawBody) throw new BadRequestException('Missing raw body');
     const rawBody = req.rawBody.toString('utf8');
-    return this.payments.handleWebhook(rawBody, signature);
+    return this.payments.handleWebhook(rawBody, signature, timestamp);
   }
 }

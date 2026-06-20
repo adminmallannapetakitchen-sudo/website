@@ -32,7 +32,7 @@ export default function OrderDetailPage() {
   if (isLoading || !order) {
     return (
       <div className="section py-20 max-w-2xl text-center text-muted-foreground">
-        <div className="animate-pulse text-5xl mb-4">📦</div>
+        <Package className="w-11 h-11 mx-auto mb-4 text-brand-red animate-pulse" strokeWidth={1.5} />
         {isLoading ? 'Loading order…' : 'Order not found'}
       </div>
     )

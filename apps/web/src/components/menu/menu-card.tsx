@@ -7,6 +7,7 @@ import { Plus, Minus, Check, Star, Zap } from 'lucide-react'
 import { useCartStore } from '@/store/cart-store'
 import { useLanguageStore } from '@/store/language-store'
 import { formatCurrency, cn } from '@/lib/utils'
+import { cardImage } from '@/lib/food-images'
 import { toast } from 'sonner'
 
 interface Variant {
@@ -30,14 +31,6 @@ interface MenuCardProps {
   variants: Variant[]
 }
 
-const FOOD_IMAGES = [
-  'https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?w=500&q=80&auto=format',
-  'https://images.unsplash.com/photo-1574653853027-5382a3d23a15?w=500&q=80&auto=format',
-  'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=500&q=80&auto=format',
-  'https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=500&q=80&auto=format',
-  'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=500&q=80&auto=format',
-]
-
 export function MenuCard({
   id, name, nameTe, description, descriptionTe,
   isVeg, isAvailable, isBestseller, isSundaySpecial, image, variants,
@@ -56,7 +49,7 @@ export function MenuCard({
   const displayDesc  = language === 'te' ? descriptionTe: description
   const variantLabel = (v: Variant) => language === 'te' ? v.labelTe : v.label
 
-  const placeholderImg = FOOD_IMAGES[id.charCodeAt(id.length - 1) % FOOD_IMAGES.length]
+  const placeholderImg = cardImage(id)
 
   const handleAdd = () => {
     if (!isAvailable) return
@@ -81,38 +74,38 @@ export function MenuCard({
   return (
     <motion.article
       layout
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.96 }}
-      whileHover={isAvailable ? { y: -6 } : {}}
-      transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+      exit={{ opacity: 0, scale: 0.97 }}
+      whileHover={isAvailable ? { y: -4 } : {}}
+      transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
       className={cn(
-        'card overflow-hidden flex flex-col group',
-        !isAvailable && 'opacity-55'
+        'card overflow-hidden flex flex-col group hover:shadow-card-hover',
+        !isAvailable && 'opacity-60'
       )}
     >
       {/* ── Image ── */}
-      <div className="relative h-48 sm:h-52 overflow-hidden bg-muted flex-shrink-0">
+      <div className="relative h-52 sm:h-56 overflow-hidden bg-muted flex-shrink-0">
         <Image
           src={image || placeholderImg}
           alt={name}
           fill
-          className="object-cover transition-transform duration-700 group-hover:scale-110"
+          className="object-cover transition-transform duration-[800ms] ease-out group-hover:scale-105"
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
         />
 
-        {/* gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+        {/* gradient for badge legibility */}
+        <div className="absolute inset-0 bg-gradient-to-t from-foreground/25 via-transparent to-foreground/5" />
 
         {/* Top-left badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5">
           {isBestseller && (
-            <span className="inline-flex items-center gap-1 bg-brand-gold text-amber-900 text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full shadow-warm">
-              <Star className="w-2.5 h-2.5 fill-current" /> Best
+            <span className="inline-flex items-center gap-1 bg-card/95 backdrop-blur-sm text-brand-red text-[10px] font-bold uppercase tracking-[0.1em] px-2.5 py-1 rounded-full shadow-sm">
+              <Star className="w-2.5 h-2.5 fill-brand-gold text-brand-gold" /> Bestseller
             </span>
           )}
           {isSundaySpecial && (
-            <span className="inline-flex items-center gap-1 bg-brand-saffron text-white text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full shadow-warm">
+            <span className="inline-flex items-center gap-1 bg-brand-red text-white text-[10px] font-bold uppercase tracking-[0.1em] px-2.5 py-1 rounded-full shadow-sm">
               <Zap className="w-2.5 h-2.5 fill-current" /> Sunday
             </span>
           )}
@@ -121,36 +114,36 @@ export function MenuCard({
         {/* Top-right veg indicator */}
         <div className="absolute top-3 right-3">
           <div className={cn(
-            'w-5 h-5 bg-white rounded-sm border-2 flex items-center justify-center shadow-sm',
-            isVeg ? 'border-green-600' : 'border-red-600'
+            'w-5 h-5 bg-white rounded-[5px] border-2 flex items-center justify-center shadow-sm',
+            isVeg ? 'border-green-600' : 'border-red-700'
           )}>
-            <div className={cn('w-2.5 h-2.5 rounded-full', isVeg ? 'bg-green-500' : 'bg-red-500')} />
+            <div className={cn('w-2 h-2 rounded-full', isVeg ? 'bg-green-600' : 'bg-red-700')} />
           </div>
         </div>
 
         {/* Unavailable overlay */}
         {!isAvailable && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-            <span className="text-white text-sm font-bold bg-black/60 px-4 py-1.5 rounded-full tracking-wide">
-              {language === 'te' ? <span className="font-telugu">అందుబాటులో లేదు</span> : 'Unavailable'}
+          <div className="absolute inset-0 bg-foreground/45 flex items-center justify-center">
+            <span className="text-white text-sm font-semibold bg-foreground/60 px-4 py-1.5 rounded-full tracking-wide">
+              {language === 'te' ? <span className="font-telugu">అందుబాటులో లేదు</span> : 'Sold out'}
             </span>
           </div>
         )}
       </div>
 
       {/* ── Content ── */}
-      <div className="flex flex-col flex-1 p-4 gap-3">
+      <div className="flex flex-col flex-1 p-4 md:p-5 gap-3">
 
         {/* Name + desc */}
         <div className="flex-1">
           <h3 className={cn(
-            'font-bold text-foreground text-base md:text-[17px] leading-snug',
-            language === 'te' ? 'font-telugu' : ''
+            'text-foreground text-lg leading-snug font-semibold',
+            language === 'te' ? 'font-telugu' : 'font-display'
           )}>
             {displayName}
           </h3>
           <p className={cn(
-            'text-[12px] text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed',
+            'text-[12.5px] text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed',
             language === 'te' ? 'font-telugu' : ''
           )}>
             {displayDesc}
@@ -165,9 +158,9 @@ export function MenuCard({
                 key={v.id}
                 onClick={() => setSelectedId(v.id)}
                 className={cn(
-                  'text-[11px] font-semibold px-3 py-1 rounded-full border transition-all duration-150',
+                  'text-[11px] font-semibold px-3 py-1 rounded-full border transition-colors duration-150',
                   selectedId === v.id
-                    ? 'bg-brand-red text-white border-brand-red shadow-brand-sm'
+                    ? 'bg-brand-red text-white border-brand-red'
                     : 'border-border text-muted-foreground hover:border-brand-red/40 hover:text-foreground bg-card'
                 )}
               >
@@ -178,14 +171,14 @@ export function MenuCard({
         )}
 
         {/* Price + action row */}
-        <div className="flex items-center justify-between gap-3 pt-0.5">
+        <div className="flex items-center justify-between gap-3 border-t border-border/60 -mx-4 md:-mx-5 px-4 md:px-5 pt-3.5 mt-1">
           {/* Price */}
           <div className="flex flex-col">
-            <span className="text-xl font-extrabold text-brand-red leading-none">
+            <span className="text-xl font-bold text-foreground leading-none font-display">
               {formatCurrency(selectedVariant?.price ?? 0)}
             </span>
             {variants.length > 1 && (
-              <span className={cn('text-[10px] text-muted-foreground mt-0.5', language === 'te' ? 'font-telugu' : '')}>
+              <span className={cn('text-[10px] text-muted-foreground mt-1', language === 'te' ? 'font-telugu' : '')}>
                 {variantLabel(selectedVariant)}
               </span>
             )}

@@ -31,6 +31,10 @@ start.txt
 apps/web/public/uploads/*
 !apps/web/public/uploads/.gitkeep
 
+# Local design/agent tooling (not part of the app build)
+.agents/
+skills-lock.json
+
 # OS files
 .DS_Store
 Thumbs.db

@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ShoppingCart, Menu, X, User, ChevronDown,
-  LogOut, Package, MapPin, Settings, Bell, Flame,
+  LogOut, Package, Settings, Home, UtensilsCrossed, Sparkles,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useCartStore } from '@/store/cart-store'
@@ -257,7 +257,13 @@ export function Header() {
         </div>
       </header>
 
-      {/* ── Mobile drawer ── */}
+      {/* ── Mobile drawer ──
+           Wrapped in a fixed, overflow-hidden layer so the panel's off-screen
+           slide (x:100%) is CLIPPED rather than creating page-level horizontal
+           scroll. A position:fixed panel escapes html/body overflow-x:clip
+           (its containing block is the viewport); an absolute child, however,
+           is clipped by this fixed layer. */}
+      <div className="md:hidden pointer-events-none fixed inset-0 z-[60] overflow-hidden">
       <AnimatePresence>
         {mobileOpen && (
           <>
@@ -266,14 +272,14 @@ export function Header() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setMobileOpen(false)}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
+              className="pointer-events-auto absolute inset-0 bg-black/50 backdrop-blur-sm"
             />
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 32, stiffness: 300 }}
-              className="fixed top-0 right-0 bottom-0 z-50 w-72 bg-background shadow-float md:hidden flex flex-col"
+              className="pointer-events-auto absolute top-0 right-0 bottom-0 w-72 bg-background shadow-float flex flex-col"
             >
               {/* Drawer header */}
               <div className="flex items-center justify-between p-4 border-b border-border">
@@ -322,11 +328,11 @@ export function Header() {
               {/* Nav links */}
               <nav className="flex-1 overflow-y-auto px-3 pt-3 space-y-0.5">
                 {[
-                  { href: '/',              icon: '🏠', label: t.nav.home },
-                  { href: '/menu',          icon: '🍛', label: t.nav.menu },
-                  { href: '/sunday-special',icon: '⭐', label: t.nav.sundaySpecial },
-                  { href: '/account/orders',icon: '📦', label: t.account.orders },
-                  { href: '/account',       icon: '👤', label: t.account.profile },
+                  { href: '/',              icon: Home,             label: t.nav.home },
+                  { href: '/menu',          icon: UtensilsCrossed,  label: t.nav.menu },
+                  { href: '/sunday-special',icon: Sparkles,         label: t.nav.sundaySpecial },
+                  { href: '/account/orders',icon: Package,          label: t.account.orders },
+                  { href: '/account',       icon: User,             label: t.account.profile },
                 ].map((item, i) => (
                   <motion.div
                     key={item.href}
@@ -342,7 +348,7 @@ export function Header() {
                         language === 'te' ? 'font-telugu' : ''
                       )}
                     >
-                      <span className="text-base">{item.icon}</span>
+                      <item.icon className="w-[18px] h-[18px] text-muted-foreground" strokeWidth={1.5} />
                       {item.label}
                     </Link>
                   </motion.div>
@@ -396,6 +402,7 @@ export function Header() {
           </>
         )}
       </AnimatePresence>
+      </div>
     </>
   )
 }

@@ -24,35 +24,48 @@ export class PaymentsService {
     private readonly realtime: RealtimeGateway,
   ) {}
 
-  publicKeyId(): string {
-    return this.gateway.publicKeyId();
+  mode() {
+    return this.gateway.mode();
   }
 
-  async createRazorpayOrder({ orderId, orderNumber, amount }: { orderId: string; orderNumber: string; amount: number }) {
-    const rp = await this.gateway.createOrder({ amount, orderId, orderNumber });
+  async createPaymentSession({
+    orderId,
+    orderNumber,
+    amount,
+    customer,
+  }: {
+    orderId: string;
+    orderNumber: string;
+    amount: number;
+    customer: { id: string; name: string; phone: string; email?: string | null };
+  }) {
+    const cf = await this.gateway.createOrder({
+      orderRef: orderNumber,
+      internalOrderId: orderId,
+      amount,
+      customer,
+    });
+    // Store the merchant order_ref (= orderNumber) we sent to Cashfree. Webhooks
+    // and status checks match on this. (Legacy column name: razorpayOrderId.)
     await this.prisma.payment.update({
       where: { orderId },
-      data: { razorpayOrderId: rp.id },
+      data: { razorpayOrderId: cf.orderRef },
     });
-    return rp;
+    return { paymentSessionId: cf.paymentSessionId, orderRef: cf.orderRef, mode: cf.mode };
   }
 
-  async verifyAndCapture(
-    userId: string,
-    dto: {
-      razorpayOrderId: string;
-      razorpayPaymentId: string;
-      razorpaySignature: string;
-      internalOrderId: string;
-    },
-  ) {
-    const ok = this.gateway.verifySignature({
-      orderId: dto.razorpayOrderId,
-      paymentId: dto.razorpayPaymentId,
-      signature: dto.razorpaySignature,
-    });
-    if (!ok) throw new BadRequestException('Invalid payment signature');
+  /** Idempotent replay: re-fetch the existing Cashfree order to resume its session. */
+  async resumePaymentSession(orderRef: string) {
+    const status = await this.gateway.getOrderStatus(orderRef);
+    return {
+      paymentSessionId: status.paymentSessionId ?? '',
+      orderRef,
+      mode: this.gateway.mode(),
+      orderStatus: status.orderStatus,
+    };
+  }
 
+  async verifyAndCapture(userId: string, dto: { internalOrderId: string }) {
     const order = await this.prisma.order.findUnique({
       where: { id: dto.internalOrderId },
       include: { payment: true },
@@ -64,17 +77,23 @@ export class PaymentsService {
       throw new ForbiddenException('This order does not belong to you');
     }
     if (!order.payment) throw new NotFoundException('Payment record missing');
-    // C5/H2: bind the internal order to the Razorpay order it was created for.
-    // Otherwise an unrelated (e.g. attacker-controlled) Razorpay order/signature
-    // pair could be replayed against this order.
-    if (!order.payment.razorpayOrderId || order.payment.razorpayOrderId !== dto.razorpayOrderId) {
-      throw new BadRequestException('Payment does not match this order');
+    if (!order.payment.razorpayOrderId) {
+      throw new BadRequestException('No payment session exists for this order');
     }
 
     // Fast idempotent path.
     if (order.payment.status === PaymentStatus.CAPTURED) {
       return { ok: true, alreadyCaptured: true, order: { id: order.id, status: order.status } };
     }
+
+    // Cashfree is the source of truth (no client signature). Confirm by fetching
+    // the order status by the order_ref we created it with — that ref is bound
+    // to this order, so a foreign order/payment cannot be replayed against it.
+    const status = await this.gateway.getOrderStatus(order.payment.razorpayOrderId);
+    if (status.orderStatus !== 'PAID') {
+      throw new BadRequestException('Payment not completed yet');
+    }
+    const cfPaymentId = status.cfPaymentId ?? null;
 
     // Authoritative, race-safe capture.
     const outcome = await this.prisma.$transaction(async (tx) => {
@@ -84,8 +103,7 @@ export class PaymentsService {
       const captured = await tx.payment.updateMany({
         where: { id: order.payment!.id, status: { not: PaymentStatus.CAPTURED } },
         data: {
-          razorpayPaymentId: dto.razorpayPaymentId,
-          razorpaySignature: dto.razorpaySignature,
+          razorpayPaymentId: cfPaymentId,
           status: PaymentStatus.CAPTURED,
           capturedAt: new Date(),
         },
@@ -155,40 +173,46 @@ export class PaymentsService {
     };
   }
 
-  async handleWebhook(rawBody: string, signature: string) {
-    if (!this.gateway.verifyWebhookSignature(rawBody, signature)) {
+  async handleWebhook(rawBody: string, signature: string, timestamp: string) {
+    if (!this.gateway.verifyWebhookSignature(rawBody, signature, timestamp)) {
       throw new BadRequestException('Invalid webhook signature');
     }
 
     const payload = JSON.parse(rawBody);
-    const eventId = payload.id ?? payload.payload?.payment?.entity?.id ?? `${payload.event}-${Date.now()}`;
-    const eventType = payload.event;
+    const eventType: string = payload.type ?? 'UNKNOWN';
+    const data = payload.data ?? {};
+    const orderRef: string | undefined = data.order?.order_id;
+    const cfPaymentId = data.payment?.cf_payment_id;
+    const eventId =
+      (cfPaymentId != null ? String(cfPaymentId) : undefined) ??
+      `${eventType}-${orderRef ?? 'na'}-${payload.event_time ?? Date.now()}`;
 
     // Idempotency: skip if seen
     const existing = await this.prisma.webhookEvent.findUnique({
-      where: { provider_eventId: { provider: 'razorpay', eventId } } as any,
+      where: { provider_eventId: { provider: 'cashfree', eventId } } as any,
     });
     if (existing?.processedAt) return { ok: true, duplicate: true };
 
     const record = await this.prisma.webhookEvent.upsert({
-      where: { provider_eventId: { provider: 'razorpay', eventId } } as any,
-      create: { provider: 'razorpay', eventId, eventType, payload },
+      where: { provider_eventId: { provider: 'cashfree', eventId } } as any,
+      create: { provider: 'cashfree', eventId, eventType, payload },
       update: { eventType, payload },
     });
 
     try {
       switch (eventType) {
-        case 'payment.captured':
-          await this.handlePaymentCaptured(payload.payload.payment.entity);
+        case 'PAYMENT_SUCCESS_WEBHOOK':
+          if (orderRef) await this.handlePaymentCaptured(orderRef, cfPaymentId != null ? String(cfPaymentId) : null);
           break;
-        case 'payment.failed':
-          await this.handlePaymentFailed(payload.payload.payment.entity);
+        case 'PAYMENT_FAILED_WEBHOOK':
+        case 'PAYMENT_USER_DROPPED_WEBHOOK':
+          if (orderRef) await this.handlePaymentFailed(orderRef, data.payment?.payment_message);
           break;
-        case 'refund.processed':
-          await this.handleRefundProcessed(payload.payload.refund.entity);
+        case 'REFUND_STATUS_WEBHOOK':
+          await this.handleRefundProcessed(data.refund ?? {});
           break;
         default:
-          this.logger.log(`Unhandled Razorpay event: ${eventType}`);
+          this.logger.log(`Unhandled Cashfree event: ${eventType}`);
       }
       await this.prisma.webhookEvent.update({
         where: { id: record.id },
@@ -203,15 +227,15 @@ export class PaymentsService {
       });
       this.logger.error(`Webhook ${eventType} failed: ${msg}`);
       // Do NOT leak the raw internal error to the caller. Return a generic
-      // 503 so Razorpay retries the (recorded) event without exposing
+      // 503 so Cashfree retries the (recorded) event without exposing
       // stack/DB internals.
       throw new ServiceUnavailableException('Webhook processing failed');
     }
   }
 
-  private async handlePaymentCaptured(rp: any) {
+  private async handlePaymentCaptured(orderRef: string, cfPaymentId: string | null) {
     const payment = await this.prisma.payment.findFirst({
-      where: { razorpayOrderId: rp.order_id },
+      where: { razorpayOrderId: orderRef },
       include: { order: true },
     });
     if (!payment || payment.status === PaymentStatus.CAPTURED) return;
@@ -220,7 +244,7 @@ export class PaymentsService {
       await tx.payment.update({
         where: { id: payment.id },
         data: {
-          razorpayPaymentId: rp.id,
+          razorpayPaymentId: cfPaymentId,
           status: PaymentStatus.CAPTURED,
           capturedAt: new Date(),
         },
@@ -245,32 +269,33 @@ export class PaymentsService {
     await this.events.emitNewOrder(payment.orderId);
   }
 
-  private async handlePaymentFailed(rp: any) {
+  private async handlePaymentFailed(orderRef: string, message?: string) {
     const payment = await this.prisma.payment.findFirst({
-      where: { razorpayOrderId: rp.order_id },
+      where: { razorpayOrderId: orderRef },
     });
-    if (!payment) return;
+    if (!payment || payment.status === PaymentStatus.CAPTURED) return;
     await this.prisma.payment.update({
       where: { id: payment.id },
       data: {
         status: PaymentStatus.FAILED,
-        failureCode: rp.error_code,
-        failureDescription: rp.error_description,
+        failureDescription: message ?? 'Payment failed',
       },
     });
   }
 
-  private async handleRefundProcessed(rp: any) {
+  private async handleRefundProcessed(refund: any) {
+    const orderRef = refund.order_id;
+    if (!orderRef || refund.refund_status !== 'SUCCESS') return;
     const payment = await this.prisma.payment.findFirst({
-      where: { razorpayPaymentId: rp.payment_id },
+      where: { razorpayOrderId: orderRef },
     });
     if (!payment) return;
     await this.prisma.$transaction(async (tx) => {
       await tx.payment.update({
         where: { id: payment.id },
         data: {
-          refundId: rp.id,
-          refundAmount: Number(rp.amount) / 100,
+          refundId: String(refund.refund_id ?? refund.cf_refund_id ?? ''),
+          refundAmount: Number(refund.refund_amount ?? 0),
           status: PaymentStatus.REFUNDED,
           refundedAt: new Date(),
         },
@@ -297,9 +322,9 @@ export class PaymentsService {
     });
     if (!order || !order.payment) throw new NotFoundException('Order/Payment not found');
     if (order.payment.method !== 'RAZORPAY') {
-      throw new BadRequestException('Only Razorpay payments can be auto-refunded');
+      throw new BadRequestException('Only online (Cashfree) payments can be auto-refunded');
     }
-    if (!order.payment.razorpayPaymentId) {
+    if (!order.payment.razorpayOrderId || !order.payment.razorpayPaymentId) {
       throw new BadRequestException('No captured payment to refund');
     }
     // M2: only a CAPTURED payment is refundable, and the CAPTURED →
@@ -317,12 +342,15 @@ export class PaymentsService {
     }
 
     const refundAmount = amount ?? Number(order.payment.amount);
+    // Cashfree refund_id: unique, alphanumeric/_/-, per order.
+    const refundRequestId = `rf-${order.orderNumber}-${Date.now()}`;
 
     let refund: { refundId: string };
     try {
       refund = await this.gateway.refund({
-        paymentId: order.payment.razorpayPaymentId,
+        orderRef: order.payment.razorpayOrderId,
         amount: refundAmount,
+        refundId: refundRequestId,
       });
     } catch (err) {
       // Gateway call failed — roll the claim back so it can be retried

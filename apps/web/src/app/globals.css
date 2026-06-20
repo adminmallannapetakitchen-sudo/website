@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Serif+Telugu:wght@400;600;700&family=Playfair+Display:ital,wght@0,700;0,800;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Noto+Serif+Telugu:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,9 +6,14 @@
 
 @layer base {
   :root {
-    --radius: 0.75rem;
+    --radius: 1rem;
     --bottom-nav-height: 72px;
-    scroll-padding-top: 4.5rem;
+    scroll-padding-top: 5rem;
+
+    /* Emil Kowalski easing curves — stronger than the CSS built-ins */
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   * { @apply border-border; box-sizing: border-box; }
@@ -21,12 +26,15 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-feature-settings: 'rlig' 1, 'calt' 1;
+    font-feature-settings: 'rlig' 1, 'calt' 1, 'ss01' 1;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
-  /* Custom selection color */
-  ::selection { @apply bg-brand-red/20 text-brand-red-dark; }
+  /* Display type wants tight tracking + optical sizing */
+  .font-display { letter-spacing: -0.02em; }
+
+  ::selection { @apply bg-brand-red/15 text-brand-red-dark; }
 }
 
 @layer components {
@@ -37,35 +45,38 @@
   .scrollbar-thin::-webkit-scrollbar-track { @apply bg-transparent; }
   .scrollbar-thin::-webkit-scrollbar-thumb { @apply bg-border rounded-full; }
 
-  /* ── Buttons ── */
+  /* ── Buttons — pill scale, soft press, Emil easing ── */
   .btn-brand {
-    @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-red text-white font-semibold px-6 py-3 text-sm
-           transition-all duration-200 select-none
-           hover:bg-brand-red-dark hover:-translate-y-0.5 hover:shadow-brand
-           active:translate-y-0 active:shadow-brand-sm active:scale-[0.98]
-           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red focus-visible:ring-offset-2
-           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none
-           shadow-brand-sm;
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-brand-red text-white font-semibold px-6 py-3 text-sm
+           select-none shadow-brand-sm
+           hover:bg-brand-red-dark hover:shadow-brand
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red focus-visible:ring-offset-2 focus-visible:ring-offset-background
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-brand-sm;
+    transition: transform 0.18s var(--ease-out), background-color 0.18s var(--ease-out), box-shadow 0.18s var(--ease-out);
   }
+  .btn-brand:active { transform: scale(0.97); }
 
   .btn-outline {
-    @apply inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-brand-red text-brand-red font-semibold px-6 py-3 text-sm
-           transition-all duration-200 select-none
-           hover:bg-brand-red hover:text-white hover:-translate-y-0.5 hover:shadow-brand
-           active:translate-y-0 active:scale-[0.98]
-           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red focus-visible:ring-offset-2;
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-brand-red/35 text-brand-red font-semibold px-6 py-3 text-sm
+           select-none bg-transparent
+           hover:bg-brand-red hover:text-white hover:border-brand-red
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+    transition: transform 0.18s var(--ease-out), background-color 0.18s var(--ease-out), color 0.18s var(--ease-out), border-color 0.18s var(--ease-out);
   }
+  .btn-outline:active { transform: scale(0.97); }
 
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl text-foreground font-medium px-4 py-2.5 text-sm
-           transition-all duration-150
-           hover:bg-muted active:scale-[0.97]
+    @apply inline-flex items-center justify-center gap-2 rounded-full text-foreground font-medium px-4 py-2.5 text-sm
+           hover:bg-muted
            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1;
+    transition: transform 0.15s var(--ease-out), background-color 0.15s var(--ease-out);
   }
+  .btn-ghost:active { transform: scale(0.97); }
 
   /* ── Cards ── */
   .card {
-    @apply bg-card rounded-2xl border border-border shadow-card transition-all duration-300;
+    @apply bg-card rounded-[1.5rem] border border-border/70 shadow-card;
+    transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
   }
   .card-interactive {
     @apply card hover:-translate-y-1 hover:shadow-card-hover cursor-pointer;
@@ -73,7 +84,7 @@
 
   /* ── Glass ── */
   .glass {
-    @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-[0_8px_32px_rgba(26,20,16,0.07)];
+    @apply bg-card/70 backdrop-blur-xl border border-white/50 shadow-[0_8px_32px_-12px_rgba(43,27,19,0.16)];
   }
   .glass-dark {
     @apply bg-foreground/80 backdrop-blur-xl border border-white/10;
@@ -81,30 +92,41 @@
 
   /* ── Input ── */
   .input {
-    @apply w-full rounded-xl border border-input bg-card px-4 py-3 text-sm
-           focus:outline-none focus:ring-2 focus:ring-brand-red focus:border-transparent
-           placeholder:text-muted-foreground transition-all duration-200;
+    @apply w-full rounded-2xl border border-input bg-card px-4 py-3 text-sm
+           focus:outline-none focus:ring-2 focus:ring-brand-red/60 focus:border-transparent
+           placeholder:text-muted-foreground/70;
+    transition: box-shadow 0.18s var(--ease-out), border-color 0.18s var(--ease-out);
   }
 
   /* ── Section ── */
   .section {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+    @apply max-w-[1240px] mx-auto px-5 sm:px-6 lg:px-8;
   }
 
   .section-title {
-    @apply text-2xl md:text-3xl lg:text-4xl font-bold text-foreground font-display leading-tight;
+    @apply text-3xl md:text-4xl lg:text-[2.75rem] font-bold text-foreground font-display leading-[1.05];
   }
-
   .section-subtitle {
-    @apply text-muted-foreground text-sm md:text-base mt-2;
+    @apply text-muted-foreground text-sm md:text-base mt-2.5 max-w-prose;
   }
 
   /* ── Header blur ── */
   .header-blur {
-    @apply bg-background/85 backdrop-blur-2xl border-b border-border/50;
+    @apply bg-background/80 backdrop-blur-2xl border-b border-border/60;
   }
 
-  /* ── Gradient text ── */
+  /* ── Eyebrow (small refined label) ── */
+  .eyebrow {
+    @apply inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-red/80;
+  }
+
+  /* ── Gold hairline divider ── */
+  .rule-gold {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, theme('colors.brand.gold') 50%, transparent);
+  }
+
+  /* ── Gradient text (kept for select brand moments) ── */
   .gradient-text {
     @apply bg-brand-gradient bg-clip-text text-transparent;
   }
@@ -119,24 +141,35 @@
 
   /* ── Skeleton shimmer ── */
   .skeleton {
-    @apply bg-gradient-to-r from-muted via-cream-dark to-muted bg-[length:200%_100%] animate-shimmer rounded-xl;
+    @apply bg-gradient-to-r from-muted via-brand-cream-dark to-muted bg-[length:200%_100%] animate-shimmer rounded-xl;
   }
 
-  /* ── Bottom nav spacing — same calc on mobile and desktop dock ── */
+  /* ── Bottom nav spacing ── */
   .pb-nav { padding-bottom: calc(var(--bottom-nav-height) + 1.5rem); }
   .pb-nav-safe { padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 1rem); }
 }
 
 @layer utilities {
   .text-balance { text-wrap: balance; }
+  .text-pretty { text-wrap: pretty; }
   .pb-safe { padding-bottom: max(env(safe-area-inset-bottom), 0.75rem); }
   .pt-safe { padding-top: env(safe-area-inset-top); }
-
-  /* Prevent scroll when modal/drawer open */
   .no-scroll { overflow: hidden; }
 }
 
-/* ── Steam animation for logo ── */
+/* ── Paper grain: a fixed, pointer-events-none overlay (cheap, premium) ── */
+.paper-grain::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.4;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+}
+
+/* ── Steam animation (kept for any legacy use) ── */
 @keyframes steam {
   0% { opacity: 0; transform: translateY(0) scaleX(1); }
   50% { opacity: 0.7; transform: translateY(-12px) scaleX(1.1); }
@@ -146,19 +179,14 @@
 .steam-2 { animation: steam 2.5s ease-in-out infinite 0.4s; }
 .steam-3 { animation: steam 2.5s ease-in-out infinite 0.8s; }
 
-/* ── Ripple effect on tap ── */
-@keyframes ripple {
-  to { transform: scale(4); opacity: 0; }
-}
-
-/* ── Dot pattern background ── */
+/* ── Dot pattern background (kept, retuned to claret) ── */
 .dot-pattern {
-  background-image: radial-gradient(circle, rgba(184,51,42,0.08) 1px, transparent 1px);
-  background-size: 28px 28px;
+  background-image: radial-gradient(circle, rgba(161,42,34,0.06) 1px, transparent 1px);
+  background-size: 30px 30px;
 }
 
 /* ── Page transition ── */
-.page-enter { animation: fade-up 0.4s ease-out forwards; }
+.page-enter { animation: fade-up 0.4s var(--ease-out) forwards; }
 
 /* ── Bottom nav active dot indicator ── */
 .nav-active-dot {
@@ -168,4 +196,38 @@
   background: currentColor;
   display: block;
   margin: 2px auto 0;
+}
+
+/* ── Home full-screen snap "pages" — desktop + motion-ok only ── */
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  html.home-snap { scroll-snap-type: y proximity; }
+  html.home-snap .snap-section { scroll-snap-align: start; }
+}
+
+/* ── Mobile guards ── */
+/* iOS zooms in when a focused input's font-size is < 16px. Force 16px on phones. */
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+/* Belt-and-suspenders: no horizontal scrolling of the whole page. `clip` does
+   NOT create a scroll container, so position: sticky + vertical scroll-snap keep
+   working. Applied at the viewport (html) level too, because `position: fixed`
+   elements anchor to the viewport — body's clip can't reach them (e.g. the mobile
+   drawer sliding to x:100% off the right edge during its close animation). */
+html,
+body {
+  overflow-x: clip;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

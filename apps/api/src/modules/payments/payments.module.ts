@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PaymentsService } from './payments.service';
 import { AdminPaymentsController, PaymentsController } from './payments.controller';
 import { PAYMENT_GATEWAY } from './payment-gateway.interface';
-import { RazorpayGatewayService } from './razorpay-gateway.service';
+import { CashfreeGatewayService } from './cashfree-gateway.service';
 import { MockPaymentGatewayService } from './mock-payment-gateway.service';
 import { OrdersModule } from '../orders/orders.module';
 import { RealtimeModule } from '../realtime/realtime.module';
@@ -19,27 +19,27 @@ import { RealtimeModule } from '../realtime/realtime.module';
       useFactory: (cs: ConfigService) => {
         const logger = new Logger('PaymentGateway');
         const env = cs.get<string>('env');
-        const keyId = cs.get<string>('razorpay.keyId');
-        const keySecret = cs.get<string>('razorpay.keySecret');
+        const appId = cs.get<string>('cashfree.appId');
+        const secret = cs.get<string>('cashfree.secretKey');
 
-        if (keyId && keySecret) {
-          logger.log('Using RazorpayGatewayService (live signature verification)');
-          return new RazorpayGatewayService(cs);
+        if (appId && secret) {
+          logger.log(`Using CashfreeGatewayService (${cs.get<string>('cashfree.env')})`);
+          return new CashfreeGatewayService(cs);
         }
 
-        // C4: the mock gateway accepts ANY signature/webhook. It must never be
-        // reachable in production — fail fast at boot instead of silently
-        // letting anyone confirm unpaid orders for free.
+        // C4: the mock gateway treats every order as PAID and accepts any
+        // webhook. It must never be reachable in production — fail fast at boot
+        // instead of silently letting anyone confirm unpaid orders for free.
         if (env === 'production') {
           throw new Error(
-            'FATAL: Razorpay credentials are missing in production. ' +
-              'Refusing to start with the mock payment gateway (it accepts any signature). ' +
-              'Set RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET / RAZORPAY_WEBHOOK_SECRET.',
+            'FATAL: Cashfree credentials are missing in production. ' +
+              'Refusing to start with the mock payment gateway (it confirms any order). ' +
+              'Set CASHFREE_APP_ID / CASHFREE_SECRET_KEY (and CASHFREE_ENV).',
           );
         }
 
         logger.warn(
-          '⚠️  Using MockPaymentGatewayService — signatures/webhooks are NOT verified. ' +
+          '⚠️  Using MockPaymentGatewayService — payments are auto-confirmed and webhooks are NOT verified. ' +
             'Dev/test only. This will refuse to load in production.',
         );
         return new MockPaymentGatewayService();

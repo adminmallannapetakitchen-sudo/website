@@ -35,7 +35,7 @@ export default function AdminCustomersPage() {
         ) : customers.length === 0 ? (
           <p className="p-6 text-sm text-muted-foreground text-center">No customers found.</p>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full text-sm min-w-[560px]">
             <thead>
               <tr className="border-b border-border bg-muted/30">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Customer</th>
@@ -72,7 +72,7 @@ export default function AdminCustomersPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </div>
     </motion.div>

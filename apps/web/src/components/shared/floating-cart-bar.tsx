@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ShoppingCart, ArrowRight } from 'lucide-react'
@@ -9,9 +10,14 @@ import { formatCurrency, cn } from '@/lib/utils'
 import { usePathname } from 'next/navigation'
 
 export function FloatingCartBar() {
-  const { items, total, itemCount } = useCartStore()
+  const { total, itemCount }        = useCartStore()
   const { language }                = useLanguageStore()
   const pathname                    = usePathname()
+
+  // The cart store rehydrates from localStorage on the client's first render,
+  // so gate on mount to keep SSR and first client render identical (no mismatch).
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
 
   const count     = itemCount()
   const totalAmt  = total()
@@ -19,7 +25,7 @@ export function FloatingCartBar() {
 
   return (
     <AnimatePresence>
-      {count > 0 && !hideOn && (
+      {mounted && count > 0 && !hideOn && (
         <motion.div
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}

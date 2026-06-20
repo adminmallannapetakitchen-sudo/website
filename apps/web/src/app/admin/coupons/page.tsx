@@ -102,7 +102,7 @@ export default function AdminCouponsPage() {
         ) : coupons.length === 0 ? (
           <p className="p-6 text-sm text-muted-foreground text-center">No coupons yet.</p>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full text-sm min-w-[640px]">
             <thead>
               <tr className="border-b border-border bg-muted/30">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Code</th>
@@ -144,7 +144,7 @@ export default function AdminCouponsPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </div>
     </motion.div>

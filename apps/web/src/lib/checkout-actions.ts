@@ -36,7 +36,7 @@ export async function getQuote(couponCode?: string): Promise<QuoteBreakdown> {
 
 interface PlaceOrderResult {
   order: { id: string; orderNumber: string; status: string; total: number; paymentMethod: string }
-  razorpay: { id: string; amount: number; currency: string; keyId: string } | null
+  cashfree: { paymentSessionId: string; orderRef: string; mode: 'sandbox' | 'production' } | null
 }
 
 export async function placeOrder(input: {
@@ -53,12 +53,7 @@ export async function placeOrder(input: {
   )
 }
 
-export async function verifyPayment(input: {
-  razorpayOrderId: string
-  razorpayPaymentId: string
-  razorpaySignature: string
-  internalOrderId: string
-}) {
+export async function verifyPayment(input: { internalOrderId: string }) {
   return api.post('/payments/verify', input)
 }
 

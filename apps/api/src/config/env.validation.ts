@@ -12,6 +12,7 @@ const envSchema = z.object({
   JWT_REFRESH_TTL: z.string().default('30d'),
   CORS_ORIGINS: z.string().default('http://localhost:3000'),
   WEB_URL: z.string().url().default('http://localhost:3000'),
+  PUBLIC_API_URL: z.string().optional().default(''),
 
   GOOGLE_CLIENT_ID: z.string().optional().default(''),
   GOOGLE_CLIENT_SECRET: z.string().optional().default(''),
@@ -22,9 +23,10 @@ const envSchema = z.object({
   MSG91_OTP_LENGTH: z.string().default('6'),
   MSG91_OTP_EXPIRY_MINUTES: z.string().default('10'),
 
-  RAZORPAY_KEY_ID: z.string().optional().default(''),
-  RAZORPAY_KEY_SECRET: z.string().optional().default(''),
-  RAZORPAY_WEBHOOK_SECRET: z.string().optional().default(''),
+  CASHFREE_APP_ID: z.string().optional().default(''),
+  CASHFREE_SECRET_KEY: z.string().optional().default(''),
+  CASHFREE_ENV: z.enum(['sandbox', 'production']).default('sandbox'),
+  CASHFREE_API_VERSION: z.string().default('2023-08-01'),
 
   CLOUDINARY_CLOUD_NAME: z.string().optional().default(''),
   CLOUDINARY_API_KEY: z.string().optional().default(''),
@@ -42,13 +44,12 @@ const envSchema = z.object({
 
 const envSchemaWithProdRules = envSchema.superRefine((env, ctx) => {
   // C4: In production we must NOT fall back to the permissive mock payment
-  // gateway. Razorpay credentials + webhook secret are mandatory so the
-  // payment trust boundary fails closed instead of accepting any signature.
+  // gateway. Cashfree credentials are mandatory so the payment trust boundary
+  // fails closed instead of confirming any order for free.
   if (env.NODE_ENV === 'production') {
     const required: Array<keyof typeof env> = [
-      'RAZORPAY_KEY_ID',
-      'RAZORPAY_KEY_SECRET',
-      'RAZORPAY_WEBHOOK_SECRET',
+      'CASHFREE_APP_ID',
+      'CASHFREE_SECRET_KEY',
     ];
     for (const key of required) {
       if (!env[key]) {

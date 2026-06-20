@@ -28,7 +28,7 @@ export default function AdminOrdersPage() {
   useAdminOrderAlerts(
     () => {
       mutate()
-      toast.success('🔔 New order received!')
+      toast.success('New order received')
     },
     () => mutate(),
   )
@@ -148,7 +148,7 @@ export default function AdminOrdersPage() {
                       <p className="text-xs text-muted-foreground">{order.items.map((i) => `${i.name} ×${i.qty}`).join(', ')}</p>
                       <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                         <Clock className="w-3 h-3" />
-                        {formatDate(order.time)} · {order.paymentMethod}
+                        {formatDate(order.time)} · {order.paymentMethod === 'COD' ? 'COD' : 'Online'}
                       </p>
                     </div>
                     <div className="text-right">
@@ -213,7 +213,7 @@ export default function AdminOrdersPage() {
                 </div>
                 <div>
                   <p className="text-muted-foreground text-xs">Payment</p>
-                  <p className="font-medium">{selectedOrder.paymentMethod}</p>
+                  <p className="font-medium">{selectedOrder.paymentMethod === 'COD' ? 'Cash on Delivery' : 'Online (Cashfree)'}</p>
                 </div>
               </div>
             </motion.div>

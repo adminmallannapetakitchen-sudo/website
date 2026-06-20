@@ -1,9 +1,8 @@
 import { IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
 export class VerifyPaymentDto {
-  @IsString() razorpayOrderId!: string;
-  @IsString() razorpayPaymentId!: string;
-  @IsString() razorpaySignature!: string;
+  // Cashfree has no client-side signature — we confirm by fetching the order
+  // status server-side using the internal order id (bound to a Cashfree order).
   @IsString() internalOrderId!: string;
 }
 

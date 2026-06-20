@@ -1,0 +1,141 @@
+'use client'
+
+import { useState } from 'react'
+import Image from 'next/image'
+import { motion, AnimatePresence } from 'framer-motion'
+import { PlusIcon, MinusIcon, StarIcon } from '@/components/icons'
+import { useCartStore } from '@/store/cart-store'
+import { useLanguageStore } from '@/store/language-store'
+import { formatCurrency, cn } from '@/lib/utils'
+import { cardImage } from '@/lib/food-images'
+import { toast } from 'sonner'
+import type { UiMenuItem } from '@/lib/hooks'
+
+export function DishRow({ item }: { item: UiMenuItem }) {
+  const { language } = useLanguageStore()
+  const { addItem, items, updateQty } = useCartStore()
+  const [selectedId, setSelectedId] = useState(item.variants[0]?.id)
+
+  const variant = item.variants.find((v) => v.id === selectedId) ?? item.variants[0]
+  const cartKey = `${item.id}-${selectedId}`
+  const cartItem = items.find((i) => i.id === cartKey)
+
+  const name = language === 'te' ? item.nameTe : item.name
+  const desc = language === 'te' ? item.descriptionTe : item.description
+  const img = item.image || cardImage(item.id)
+
+  const add = () => {
+    if (!item.isAvailable || !variant) return
+    addItem({
+      id: cartKey,
+      menuItemId: item.id,
+      name: item.name,
+      nameTe: item.nameTe,
+      variantId: variant.id,
+      variantLabel: variant.label,
+      price: variant.price,
+      image: img,
+      isVeg: item.isVeg,
+    })
+    toast.success(language === 'te' ? `${item.nameTe} జోడించారు` : `${item.name} added`, { duration: 1500 })
+  }
+
+  return (
+    <div className={cn('flex gap-3.5 py-4', !item.isAvailable && 'opacity-60')}>
+      {/* photo */}
+      <div className="relative w-[96px] h-[96px] rounded-2xl overflow-hidden shrink-0 bg-muted self-start">
+        <Image src={img} alt={item.name} fill sizes="96px" className="object-cover" />
+        {!item.isAvailable && (
+          <div className="absolute inset-0 bg-foreground/45 flex items-center justify-center">
+            <span className="text-white text-[10px] font-semibold">{language === 'te' ? 'లేదు' : 'Sold out'}</span>
+          </div>
+        )}
+      </div>
+
+      {/* info — price + action pinned to the bottom so every row reads uniform */}
+      <div className="flex-1 min-w-0 flex flex-col min-h-[96px]">
+        <div className="flex items-center gap-2">
+          <span className={cn('w-3.5 h-3.5 rounded-[3px] border-[1.5px] flex items-center justify-center shrink-0', item.isVeg ? 'border-green-600' : 'border-red-700')}>
+            <span className={cn('w-1.5 h-1.5 rounded-full', item.isVeg ? 'bg-green-600' : 'bg-red-700')} />
+          </span>
+          {item.isBestseller && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-brand-red">
+              <StarIcon filled size={11} className="text-brand-gold" /> {language === 'te' ? 'పాపులర్' : 'Popular'}
+            </span>
+          )}
+        </div>
+
+        <h3 className={cn('mt-1 text-[15px] font-semibold text-foreground leading-snug line-clamp-2', language === 'te' ? 'font-telugu' : 'font-display')}>
+          {name}
+        </h3>
+        {desc && (
+          <p className={cn('text-xs text-muted-foreground leading-relaxed line-clamp-1 mt-0.5', language === 'te' ? 'font-telugu' : '')}>
+            {desc}
+          </p>
+        )}
+
+        {/* variant chips (only when there's more than one size) */}
+        {item.variants.length > 1 && (
+          <div className="flex gap-1.5 mt-2 flex-wrap">
+            {item.variants.map((v) => (
+              <button
+                key={v.id}
+                onClick={() => setSelectedId(v.id)}
+                className={cn(
+                  'text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors',
+                  selectedId === v.id ? 'border-brand-red text-brand-red bg-brand-red/5' : 'border-border text-muted-foreground',
+                )}
+              >
+                <span className={language === 'te' ? 'font-telugu' : ''}>{language === 'te' ? v.labelTe : v.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* price + add — pinned bottom, aligned with the photo */}
+        <div className="mt-auto pt-2 flex items-center justify-between gap-3">
+          <span className="text-base font-bold text-foreground font-display tabular-nums">
+            {formatCurrency(variant?.price ?? 0)}
+          </span>
+
+          <AnimatePresence mode="wait" initial={false}>
+            {cartItem ? (
+              <motion.div
+                key="qty"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.14 }}
+                className="flex items-center bg-brand-red rounded-full text-white h-10 shadow-brand-sm"
+              >
+                <button onClick={() => updateQty(cartKey, cartItem.qty - 1)} className="w-10 h-10 flex items-center justify-center active:scale-90 transition-transform" aria-label="Decrease">
+                  <MinusIcon size={16} />
+                </button>
+                <span className="w-5 text-center text-sm font-bold tabular-nums">{cartItem.qty}</span>
+                <button onClick={() => updateQty(cartKey, cartItem.qty + 1)} className="w-10 h-10 flex items-center justify-center active:scale-90 transition-transform" aria-label="Increase">
+                  <PlusIcon size={16} />
+                </button>
+              </motion.div>
+            ) : (
+              <motion.button
+                key="add"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.14 }}
+                onClick={add}
+                disabled={!item.isAvailable}
+                className={cn(
+                  'h-10 px-6 rounded-full text-sm font-bold uppercase tracking-wide inline-flex items-center gap-1.5 transition-transform active:scale-95',
+                  item.isAvailable ? 'bg-brand-red text-white shadow-brand-sm' : 'bg-muted text-muted-foreground',
+                )}
+              >
+                {language === 'te' ? 'జోడించు' : 'Add'} <PlusIcon size={15} />
+              </motion.button>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+    </div>
+  )
+}

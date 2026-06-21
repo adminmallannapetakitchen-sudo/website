@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import {
   ShoppingBag,
@@ -34,6 +35,7 @@ export default function AdminDashboard() {
       change: `${s?.week?.count ?? 0} this week`,
       icon: ShoppingBag,
       color: 'bg-brand-red/10 text-brand-red',
+      href: '/admin/orders',
     },
     {
       title: "Today's Revenue",
@@ -41,6 +43,7 @@ export default function AdminDashboard() {
       change: `${formatCurrency(s?.month?.revenue ?? 0)} this month`,
       icon: IndianRupee,
       color: 'bg-green-50 text-green-600',
+      href: '/admin/reports',
     },
     {
       title: 'Total Customers',
@@ -48,6 +51,7 @@ export default function AdminDashboard() {
       change: 'registered',
       icon: Users,
       color: 'bg-brand-saffron/10 text-brand-saffron',
+      href: '/admin/customers',
     },
     {
       title: 'Active Orders',
@@ -55,6 +59,7 @@ export default function AdminDashboard() {
       change: 'in progress',
       icon: TrendingUp,
       color: 'bg-brand-gold/10 text-amber-600',
+      href: '/admin/orders',
     },
   ]
 
@@ -84,17 +89,18 @@ export default function AdminDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.08 }}
-            className="card p-4"
           >
-            <div className="flex items-center justify-between mb-3">
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${stat.color}`}>
-                <stat.icon className="w-4.5 h-4.5" />
+            <Link href={stat.href} className="card p-4 block group hover:shadow-card-hover hover:-translate-y-0.5 transition-all">
+              <div className="flex items-center justify-between mb-3">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${stat.color}`}>
+                  <stat.icon className="w-4.5 h-4.5" />
+                </div>
+                <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-brand-red transition-colors" />
               </div>
-              <ArrowUpRight className="w-4 h-4 text-green-500" />
-            </div>
-            <p className="text-xl md:text-2xl font-bold text-foreground">{stat.value}</p>
-            <p className="text-xs text-muted-foreground mt-1 font-medium">{stat.title}</p>
-            <p className="text-xs text-green-600 mt-0.5">{stat.change}</p>
+              <p className="text-xl md:text-2xl font-bold text-foreground">{stat.value}</p>
+              <p className="text-xs text-muted-foreground mt-1 font-medium">{stat.title}</p>
+              <p className="text-xs text-green-600 mt-0.5">{stat.change}</p>
+            </Link>
           </motion.div>
         ))}
       </div>

@@ -16,6 +16,8 @@ const STATUS_CONFIG = {
   PREPARING: { label: 'Preparing', color: 'text-amber-600 bg-amber-50', icon: Package, next: 'OUT_FOR_DELIVERY', nextLabel: 'Mark Out for Delivery' },
   OUT_FOR_DELIVERY: { label: 'Out for Delivery', color: 'text-purple-600 bg-purple-50', icon: Truck, next: 'DELIVERED', nextLabel: 'Mark Delivered' },
   DELIVERED: { label: 'Delivered', color: 'text-green-600 bg-green-50', icon: Home, next: null, nextLabel: '' },
+  CANCELLED: { label: 'Cancelled', color: 'text-red-600 bg-red-50', icon: X, next: null, nextLabel: '' },
+  REFUNDED: { label: 'Refunded', color: 'text-gray-600 bg-gray-100', icon: Clock, next: null, nextLabel: '' },
 }
 
 export default function AdminOrdersPage() {

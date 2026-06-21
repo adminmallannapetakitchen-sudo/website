@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
   User, Mail, Phone, MapPin, Bell, Lock, Plus, Trash2,
-  Package, LogIn, Save, BellRing, BellOff,
+  Package, LogIn, Save, BellRing, BellOff, LogOut,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -149,9 +149,20 @@ export default function AccountPage() {
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">My Account</h1>
           <p className="text-muted-foreground text-sm mt-1">{user.role !== 'CUSTOMER' ? `${user.role} account` : 'Customer account'}</p>
         </div>
-        <Link href="/account/orders">
-          <Button variant="outline" size="sm" icon={<Package className="w-4 h-4" />}>My Orders</Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/account/orders">
+            <Button variant="outline" size="sm" icon={<Package className="w-4 h-4" />}>My Orders</Button>
+          </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            className="!text-red-600 !border-red-200 hover:!bg-red-50"
+            icon={<LogOut className="w-4 h-4" />}
+            onClick={async () => { await logout(); router.push('/'); router.refresh() }}
+          >
+            Logout
+          </Button>
+        </div>
       </motion.div>
 
       {/* Profile */}

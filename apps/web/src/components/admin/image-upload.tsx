@@ -15,6 +15,7 @@ interface Props {
 export function ImageUpload({ value, onChange }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
+  const [loadFailed, setLoadFailed] = useState(false)
 
   const pick = () => inputRef.current?.click()
 
@@ -52,14 +53,22 @@ export function ImageUpload({ value, onChange }: Props) {
 
       {value ? (
         <div className="flex items-start gap-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={value}
-            alt="Dish preview"
-            className="w-32 h-32 object-cover rounded-xl border border-border bg-muted"
-          />
+          {loadFailed ? (
+            <div className="w-32 h-32 rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center text-center px-2">
+              <X className="w-5 h-5 text-red-500 mb-1" />
+              <span className="text-[10px] text-red-600 leading-tight">Image won&apos;t load — re-upload</span>
+            </div>
+          ) : (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={value}
+              alt="Dish preview"
+              onError={() => setLoadFailed(true)}
+              className="w-32 h-32 object-cover rounded-xl border border-border bg-muted"
+            />
+          )}
           <div className="space-y-2">
-            <Button size="sm" variant="outline" onClick={pick} loading={uploading}>
+            <Button size="sm" variant="outline" onClick={() => { setLoadFailed(false); pick() }} loading={uploading}>
               Replace photo
             </Button>
             <button

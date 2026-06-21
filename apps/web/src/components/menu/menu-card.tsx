@@ -50,6 +50,8 @@ export function MenuCard({
   const variantLabel = (v: Variant) => language === 'te' ? v.labelTe : v.label
 
   const placeholderImg = cardImage(id)
+  const [imgBroken, setImgBroken] = useState(false)
+  const displaySrc = imgBroken ? placeholderImg : (image || placeholderImg)
 
   const handleAdd = () => {
     if (!isAvailable) return
@@ -87,9 +89,10 @@ export function MenuCard({
       {/* ── Image ── */}
       <div className="relative h-52 sm:h-56 overflow-hidden bg-muted flex-shrink-0">
         <Image
-          src={image || placeholderImg}
+          src={displaySrc}
           alt={name}
           fill
+          onError={() => setImgBroken(true)}
           className="object-cover transition-transform duration-[800ms] ease-out group-hover:scale-105"
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
         />

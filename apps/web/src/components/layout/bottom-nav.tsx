@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { HomeIcon, BowlIcon, BagIcon, ReceiptIcon, UserIcon } from '@/components/icons'
 import { useCartStore } from '@/store/cart-store'
 import { useLanguageStore } from '@/store/language-store'
+import { useAuthStore } from '@/store/auth-store'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
@@ -14,13 +15,17 @@ const NAV_ITEMS = [
   { href: '/menu',           icon: BowlIcon,    labelEn: 'Menu',   labelTe: 'మెను',   exact: false },
   { href: '/cart',           icon: BagIcon,     labelEn: 'Cart',   labelTe: 'కార్ట్', exact: false, isCart: true },
   { href: '/account/orders', icon: ReceiptIcon, labelEn: 'Orders', labelTe: 'ఆర్డర్లు',exact: false },
-  { href: '/login',          icon: UserIcon,    labelEn: 'Account',labelTe: 'అకౌంట్', exact: false },
+  // Account → the profile page when signed in (which has the logout button),
+  // or the login screen when signed out. Resolved at render from auth state.
+  { href: '/account',        icon: UserIcon,    labelEn: 'Account',labelTe: 'అకౌంట్', exact: true, isAccount: true },
 ]
 
 export function BottomNav() {
   const pathname  = usePathname()
   const itemCount = useCartStore((s) => s.itemCount())
   const { language } = useLanguageStore()
+  const { user, hasHydrated } = useAuthStore()
+  const loggedIn = hasHydrated && !!user
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
@@ -36,7 +41,8 @@ export function BottomNav() {
       <div className="mx-3 mb-3 md:mx-auto md:mb-5 md:max-w-[520px] rounded-3xl glass shadow-nav border border-white/60 overflow-hidden">
         <div className="flex items-center justify-around px-1 py-1.5 md:px-2 md:py-2">
           {NAV_ITEMS.map((item) => {
-            const active = isActive(item.href, item.exact)
+            const href   = (item as { isAccount?: boolean }).isAccount && !loggedIn ? '/login' : item.href
+            const active = isActive(href, item.exact)
             const label  = language === 'te' ? item.labelTe : item.labelEn
 
             if (item.isCart) {
@@ -77,7 +83,7 @@ export function BottomNav() {
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={href}
                 className="relative flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl transition-colors duration-200 group"
               >
                 <motion.div

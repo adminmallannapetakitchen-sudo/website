@@ -64,7 +64,15 @@ export class OrdersService {
     const page = opts.page ?? 1;
     const pageSize = Math.min(opts.pageSize ?? 30, 100);
     const where: Prisma.OrderWhereInput = {};
-    if (opts.status) where.status = opts.status;
+    if (opts.status) {
+      where.status = opts.status;
+    } else {
+      // Awaiting-payment orders aren't real orders yet (online checkout that was
+      // never paid). Keep them OFF the board so they don't look confirmed/paid —
+      // the payment sweep cancels abandoned ones. Still reachable via an explicit
+      // status filter if ever needed.
+      where.status = { not: OrderStatus.PENDING_PAYMENT };
+    }
     if (opts.search) {
       where.OR = [
         { orderNumber: { contains: opts.search, mode: 'insensitive' } },

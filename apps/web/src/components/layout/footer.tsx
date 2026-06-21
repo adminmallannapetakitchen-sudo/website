@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { Instagram, Phone, Mail, Heart, Sparkles } from 'lucide-react'
+import { Instagram, Phone, Mail, Sparkles } from 'lucide-react'
 import { useLanguageStore } from '@/store/language-store'
 import { kitchenInfo } from '@/lib/mock-data'
 import { cn } from '@/lib/utils'
@@ -161,8 +161,16 @@ export function Footer() {
 
         <div className="border-t border-white/10 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/50">
           <p>© {year} Mallannapeta Kitchen. {t.footer.rights}</p>
-          <p className="flex items-center gap-1">
-            Made with <Heart className="w-3 h-3 text-brand-red fill-brand-red" /> in Jagtial, Telangana
+          <p className="flex items-center gap-1.5">
+            <span>Made by</span>
+            <a
+              href="https://igniks.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-white/75 hover:text-white underline-offset-2 hover:underline transition-colors"
+            >
+              igniks
+            </a>
           </p>
         </div>
       </div>

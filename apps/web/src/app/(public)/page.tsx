@@ -3,11 +3,11 @@
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { motion, useInView } from 'framer-motion'
+import { motion, useInView, useScroll, useTransform, type MotionValue } from 'framer-motion'
 import { IngredientJourney } from '@/components/home/ingredient-journey'
 import { BiryaniFinale } from '@/components/home/biryani-finale'
 import {
-  SparkIcon, FlameIcon, ClockIcon, LeafIcon, ArrowRightIcon, ArrowUpRightIcon,
+  FlameIcon, ClockIcon, LeafIcon, ArrowRightIcon, ArrowUpRightIcon,
   StarIcon, PinIcon,
 } from '@/components/icons'
 import { useLanguageStore } from '@/store/language-store'
@@ -35,6 +35,28 @@ function Reveal({ children, delay = 0, className }: { children: React.ReactNode;
     <motion.div ref={ref} initial={{ opacity: 0, y: 30 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.7, ease: EASE, delay }} className={className}>
       {children}
     </motion.div>
+  )
+}
+
+// Scroll-active text: each word darkens from faint to full black as the line
+// scrolls through the viewport — an editorial "reading" reveal.
+function ScrollWord({ children, progress, range }: { children: string; progress: MotionValue<number>; range: [number, number] }) {
+  const opacity = useTransform(progress, range, [0.18, 1])
+  return <motion.span style={{ opacity }} className="inline-block">{children}&nbsp;</motion.span>
+}
+
+function ScrollRevealText({ text, className }: { text: string; className?: string }) {
+  const ref = useRef<HTMLParagraphElement>(null)
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 0.85', 'end 0.55'] })
+  const words = text.split(' ')
+  return (
+    <p ref={ref} className={cn('text-foreground', className)}>
+      {words.map((w, i) => (
+        <ScrollWord key={i} progress={scrollYProgress} range={[i / words.length, (i + 1) / words.length]}>
+          {w}
+        </ScrollWord>
+      ))}
+    </p>
   )
 }
 
@@ -66,7 +88,7 @@ export default function HomePage() {
         <div className="section text-center">
           <motion.div variants={heroStagger} initial="hidden" animate="show" className="flex flex-col items-center">
             <motion.span variants={heroItem} className="eyebrow">
-              <SparkIcon size={15} /> {language === 'te' ? 'జగిత్యాల · తెలంగాణ' : 'Jagtial · Telangana'}
+              {language === 'te' ? 'జగిత్యాల · తెలంగాణ' : 'Jagtial · Telangana'}
             </motion.span>
 
             <motion.h1
@@ -116,16 +138,11 @@ export default function HomePage() {
       {/* ───────── 02 · PROMISE ───────── */}
       <Section>
         <div className="section">
-          <Reveal>
-            <p className="eyebrow mb-6">{language === 'te' ? 'మా మాట' : 'Our promise'}</p>
-            <p className={cn('font-display font-medium text-foreground tracking-tight max-w-[16ch] text-[clamp(2rem,6vw,4rem)] leading-[1.12]', language === 'te' ? 'font-telugu leading-snug max-w-[18ch]' : '')}>
-              {language === 'te' ? (
-                <>ఇంట్లో వండినట్టే. <span className="text-foreground/40">ఆ ఉదయమే తాజాగా, ఎప్పుడూ పాతది కాదు.</span></>
-              ) : (
-                <>Cooked like home. <span className="text-foreground/40">Fresh that morning, never the day before.</span></>
-              )}
-            </p>
-          </Reveal>
+          <p className="eyebrow mb-6">{language === 'te' ? 'మా మాట' : 'Our promise'}</p>
+          <ScrollRevealText
+            text={language === 'te' ? 'ఇంట్లో వండినట్టే. ఆ ఉదయమే తాజాగా, ఎప్పుడూ పాతది కాదు.' : 'Cooked like home. Fresh that morning, never the day before.'}
+            className={cn('font-display font-medium tracking-tight max-w-[16ch] text-[clamp(2rem,6vw,4rem)] leading-[1.12]', language === 'te' ? 'font-telugu leading-snug max-w-[18ch]' : '')}
+          />
         </div>
       </Section>
 

@@ -23,6 +23,11 @@ export function DishRow({ item }: { item: UiMenuItem }) {
   const name = language === 'te' ? item.nameTe : item.name
   const desc = language === 'te' ? item.descriptionTe : item.description
   const img = item.image || cardImage(item.id)
+  // If the stored image URL fails to load (e.g. a stale /uploads path from
+  // before Cloudinary was configured), fall back to the curated dish photo
+  // instead of showing a broken-image icon.
+  const [imgBroken, setImgBroken] = useState(false)
+  const displaySrc = imgBroken ? cardImage(item.id) : img
 
   const add = () => {
     if (!item.isAvailable || !variant) return
@@ -44,10 +49,10 @@ export function DishRow({ item }: { item: UiMenuItem }) {
     <div className={cn('flex gap-3.5 py-4', !item.isAvailable && 'opacity-60')}>
       {/* photo */}
       <div className="relative w-[96px] h-[96px] rounded-2xl overflow-hidden shrink-0 bg-muted self-start">
-        <Image src={img} alt={item.name} fill sizes="96px" className="object-cover" />
+        <Image src={displaySrc} alt={item.name} fill sizes="96px" className="object-cover" onError={() => setImgBroken(true)} />
         {!item.isAvailable && (
-          <div className="absolute inset-0 bg-foreground/45 flex items-center justify-center">
-            <span className="text-white text-[10px] font-semibold">{language === 'te' ? 'లేదు' : 'Sold out'}</span>
+          <div className="absolute inset-0 bg-foreground/55 flex items-center justify-center px-1">
+            <span className="text-white text-[10px] font-semibold text-center leading-tight">{language === 'te' ? 'అందుబాటులో లేదు' : 'Unavailable'}</span>
           </div>
         )}
       </div>
@@ -98,6 +103,11 @@ export function DishRow({ item }: { item: UiMenuItem }) {
             {formatCurrency(variant?.price ?? 0)}
           </span>
 
+          {!item.isAvailable ? (
+            <span className="h-10 px-4 rounded-full text-xs font-bold uppercase tracking-wide inline-flex items-center bg-muted text-muted-foreground">
+              {language === 'te' ? 'అందుబాటులో లేదు' : 'Unavailable'}
+            </span>
+          ) : (
           <AnimatePresence mode="wait" initial={false}>
             {cartItem ? (
               <motion.div
@@ -124,16 +134,13 @@ export function DishRow({ item }: { item: UiMenuItem }) {
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.14 }}
                 onClick={add}
-                disabled={!item.isAvailable}
-                className={cn(
-                  'h-10 px-6 rounded-full text-sm font-bold uppercase tracking-wide inline-flex items-center gap-1.5 transition-transform active:scale-95',
-                  item.isAvailable ? 'bg-brand-red text-white shadow-brand-sm' : 'bg-muted text-muted-foreground',
-                )}
+                className="h-10 px-6 rounded-full text-sm font-bold uppercase tracking-wide inline-flex items-center gap-1.5 transition-transform active:scale-95 bg-brand-red text-white shadow-brand-sm"
               >
                 {language === 'te' ? 'జోడించు' : 'Add'} <PlusIcon size={15} />
               </motion.button>
             )}
           </AnimatePresence>
+          )}
         </div>
       </div>
     </div>

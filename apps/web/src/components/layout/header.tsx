@@ -195,7 +195,8 @@ export function Header() {
                             <p className="text-xs text-muted-foreground truncate">{user?.email ?? user?.phone}</p>
                           </div>
                           {[
-                            { href: '/account/orders',  icon: Package,  label: t.account.orders  },
+                            { href: '/account',          icon: User,     label: t.account.profile },
+                            { href: '/account/orders',   icon: Package,  label: t.account.orders  },
                             { href: '/admin',            icon: Settings, label: t.nav.admin, staffOnly: true },
                           ].filter((i) => !i.staffOnly || isStaff).map((item) => (
                             <Link

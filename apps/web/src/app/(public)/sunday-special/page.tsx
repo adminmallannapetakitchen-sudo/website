@@ -167,14 +167,14 @@ export default function SundaySpecialPage() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center text-white space-y-4"
           >
-            <div className="flex items-center gap-2 justify-center">
-              <Sparkles className="w-6 h-6 text-brand-gold animate-bounce-subtle" />
+            <div className="flex items-center justify-center">
               <span
-                className={cn('text-lg font-semibold', language === 'te' ? 'font-telugu' : '')}
+                className={cn('text-xs font-bold uppercase tracking-[0.2em] text-brand-gold', language === 'te' ? 'font-telugu tracking-normal' : '')}
               >
-                {t.sundaySpecial.title}
+                {isOrderable
+                  ? t.sundaySpecial.title
+                  : (language === 'te' ? 'రాబోయే ఆదివారం' : 'Upcoming this Sunday')}
               </span>
-              <Sparkles className="w-6 h-6 text-brand-gold animate-bounce-subtle" />
             </div>
             <h1
               className={cn(
@@ -244,20 +244,18 @@ export default function SundaySpecialPage() {
             )}
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-              <Button
-                variant="gold"
-                size="lg"
-                onClick={handleOrderNow}
-                disabled={!isOrderable}
-                icon={<Zap className="w-5 h-5" />}
-                className={!isOrderable ? 'opacity-60 cursor-not-allowed' : ''}
-              >
-                <span className={language === 'te' ? 'font-telugu' : ''}>
-                  {isOrderable
-                    ? language === 'te' ? 'ఇప్పుడే ఆర్డర్ చేయండి' : 'Order Sunday Special'
-                    : language === 'te' ? 'ఆదివారం మాత్రమే' : 'Available this Sunday'}
-                </span>
-              </Button>
+              {isOrderable && (
+                <Button
+                  variant="gold"
+                  size="lg"
+                  onClick={handleOrderNow}
+                  icon={<Zap className="w-5 h-5" />}
+                >
+                  <span className={language === 'te' ? 'font-telugu' : ''}>
+                    {language === 'te' ? 'ఇప్పుడే ఆర్డర్ చేయండి' : 'Order Sunday Special'}
+                  </span>
+                </Button>
+              )}
               <Button
                 size="lg"
                 className="bg-white/20 hover:bg-white/30 text-white border border-white/30"

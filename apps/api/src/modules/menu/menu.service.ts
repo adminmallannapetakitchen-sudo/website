@@ -10,9 +10,11 @@ export class MenuService {
   // ─── PUBLIC ──────────────────────────────────────────────
 
   listPublic(opts: { search?: string; categoryId?: string } = {}) {
+    // Unavailable items are intentionally NOT filtered out — they stay in the
+    // menu marked "Unavailable" (the storefront greys them out and disables
+    // ordering). Soft-deleted and Sunday-special-only items remain hidden.
     const where: Prisma.MenuItemWhereInput = {
       deletedAt: null,
-      isAvailable: true,
       isSundaySpecialOnly: false,
       category: { deletedAt: null, isActive: true },
     };
@@ -26,7 +28,8 @@ export class MenuService {
     }
     return this.prisma.menuItem.findMany({
       where,
-      orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }],
+      // Available first, sold-out sink to the bottom of each section.
+      orderBy: [{ isAvailable: 'desc' }, { displayOrder: 'asc' }, { name: 'asc' }],
       include: {
         variants: { where: { deletedAt: null }, orderBy: { displayOrder: 'asc' } },
         addons: { where: { isAvailable: true } },

@@ -45,9 +45,12 @@ function Glider({ g, progress, isMobile }: { g: Glide; progress: MotionValue<num
   const x = useMotionTemplate`${tx}vw`
   const y = useMotionTemplate`${ty}vh`
   const rotate = useTransform(progress, [0, 1], [0, g.spin])
+  // Fade fully out by ~78% scroll — BEFORE the closing "Hungry now?" finale
+  // (which centers ~92%). The BiryaniFinale's own convergence takes over there,
+  // so the floating gliders must be gone, not lingering over the bowl.
   const opacity = useTransform(
     progress,
-    [0, 0.04, 0.84, 0.97],
+    [0, 0.04, 0.66, 0.78],
     isMobile ? [0.3, 0.5, 0.5, 0] : [0.55, 0.85, 0.85, 0],
   )
   const Comp = g.C

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, Param, Patch, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
@@ -70,6 +70,7 @@ export class SundaySpecialController {
   constructor(private readonly service: SundaySpecialService) {}
 
   @Public()
+  @Header('Cache-Control', 'public, max-age=30, s-maxage=120, stale-while-revalidate=300')
   @Get('current')
   getCurrent() {
     return this.service.getCurrent();

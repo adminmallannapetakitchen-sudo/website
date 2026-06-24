@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { MenuService } from './menu.service';
@@ -12,13 +12,17 @@ import { CreateMenuItemDto, ToggleAvailabilityDto, UpdateMenuItemDto } from './d
 export class MenuController {
   constructor(private readonly menu: MenuService) {}
 
+  // Public menu is fine to be a minute or two stale; cache it so repeat loads
+  // and CDNs don't keep hammering the API (the biggest perceived-speed win).
   @Public()
+  @Header('Cache-Control', 'public, max-age=30, s-maxage=120, stale-while-revalidate=300')
   @Get('items')
   listPublic(@Query('search') search?: string, @Query('categoryId') categoryId?: string) {
     return this.menu.listPublic({ search, categoryId });
   }
 
   @Public()
+  @Header('Cache-Control', 'public, max-age=30, s-maxage=120, stale-while-revalidate=300')
   @Get('items/:slug')
   getBySlug(@Param('slug') slug: string) {
     return this.menu.getBySlug(slug);

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, Param, Patch, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { IsBoolean, IsOptional, IsString, Matches } from 'class-validator';
 import { Role } from '@prisma/client';
@@ -24,6 +24,7 @@ export class PincodesController {
   constructor(private readonly pincodes: PincodesService) {}
 
   @Public()
+  @Header('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600')
   @Get(':pincode/check')
   check(@Param('pincode') pincode: string) {
     return this.pincodes.check(pincode);

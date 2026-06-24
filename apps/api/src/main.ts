@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import * as Sentry from '@sentry/node';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -14,6 +15,15 @@ import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter'
 import { RedisIoAdapter } from './modules/realtime/redis-io.adapter';
 
 async function bootstrap() {
+  // Error monitoring — no-op unless SENTRY_DSN is set (so local/dev stays quiet).
+  if (process.env.SENTRY_DSN) {
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.NODE_ENV ?? 'development',
+      tracesSampleRate: 0.1,
+    });
+  }
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
     rawBody: true, // for Razorpay webhook HMAC

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch } from '@nestjs/common';
+import { Body, Controller, Get, Header, Patch } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { IsBoolean, IsEmail, IsInt, IsOptional, IsNumber, IsString } from 'class-validator';
 import { Role } from '@prisma/client';
@@ -26,7 +26,10 @@ class UpdateKitchenSettingsDto {
 export class KitchenSettingsController {
   constructor(private readonly settings: KitchenSettingsService) {}
 
+  // Short cache only — this carries the live open/closed status, so it must
+  // stay fresh while still sparing the API a hit on every page load.
   @Public()
+  @Header('Cache-Control', 'public, max-age=15, s-maxage=20, stale-while-revalidate=60')
   @Get('public')
   getPublic() {
     return this.settings.getPublic();

@@ -1,4 +1,5 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import * as Sentry from '@sentry/node';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -16,11 +17,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
       status = exception.getStatus();
       const resp = exception.getResponse();
       body = typeof resp === 'string' ? { message: resp } : resp;
+      // Report unexpected server-side HttpExceptions (5xx) only — 4xx are
+      // normal client errors and would just be noise.
+      if (status >= 500) Sentry.captureException(exception);
     } else if (exception instanceof Error) {
       // Info: never leak raw error messages / stack details to clients on a
       // 5xx. Log the full error server-side; respond generically (detailed
       // message only outside production for local debugging).
       this.logger.error(exception.message, exception.stack);
+      Sentry.captureException(exception);
       body = {
         message:
           process.env.NODE_ENV === 'production'

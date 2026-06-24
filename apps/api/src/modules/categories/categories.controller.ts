@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, Param, Patch, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { CategoriesService } from './categories.service';
@@ -13,6 +13,7 @@ export class CategoriesController {
   constructor(private readonly categories: CategoriesService) {}
 
   @Public()
+  @Header('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600')
   @Get()
   listPublic() {
     return this.categories.listPublic();

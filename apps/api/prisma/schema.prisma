@@ -361,6 +361,11 @@ model Order {
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
 
+  // Customer feedback, collected after delivery
+  rating         Int?      @map("rating")
+  ratingComment  String?   @map("rating_comment") @db.Text
+  ratedAt        DateTime? @map("rated_at")
+
   user           User                 @relation(fields: [userId], references: [id])
   items          OrderItem[]
   statusHistory  OrderStatusHistory[]

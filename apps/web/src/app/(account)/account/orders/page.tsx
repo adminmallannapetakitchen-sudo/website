@@ -7,6 +7,7 @@ import { useLanguageStore } from '@/store/language-store'
 import { useOrders } from '@/lib/hooks'
 import { formatDate, formatCurrency, cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { ReorderButton } from '@/components/shared/reorder-button'
 
 const STATUS_COLOR: Record<string, 'success' | 'warning' | 'error' | 'default'> = {
   DELIVERED: 'success',
@@ -84,6 +85,9 @@ export default function OrdersPage() {
                       <p className="font-bold text-foreground">{formatCurrency(order.total)}</p>
                       <ChevronRight className="w-4 h-4 text-muted-foreground" />
                     </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-border flex justify-end">
+                    <ReorderButton items={order.items} />
                   </div>
                 </div>
               </Link>

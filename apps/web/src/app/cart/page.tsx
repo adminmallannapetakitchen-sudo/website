@@ -14,6 +14,7 @@ import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { BottomNav } from '@/components/layout/bottom-nav'
 import { useKitchenSettings } from '@/lib/hooks'
+import { CartUpsell } from '@/components/shared/cart-upsell'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -161,6 +162,7 @@ export default function CartPage() {
                   </motion.div>
                 ))}
               </AnimatePresence>
+              <CartUpsell />
             </div>
 
             {/* Order summary */}

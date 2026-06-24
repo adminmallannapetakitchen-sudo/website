@@ -10,6 +10,8 @@ import { useOrder } from '@/lib/hooks'
 import { useOrderTracking } from '@/lib/realtime-hooks'
 import { formatDate, formatCurrency, getOrderStatusStep, ORDER_STATUS_STEPS, cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { ReorderButton } from '@/components/shared/reorder-button'
+import { RateOrder } from '@/components/shared/rate-order'
 
 const STATUS_ICONS = {
   CONFIRMED: CheckCircle,
@@ -40,6 +42,15 @@ export default function OrderDetailPage() {
 
   const currentStep = getOrderStatusStep(order.status)
   const num = (v: any) => Number(v ?? 0)
+
+  // Live-ish ETA: confirmedAt + estimated prep/delivery minutes. Refreshes with
+  // the 15s SWR poll, so the "~X min" stays roughly current.
+  const isActiveOrder = !['DELIVERED', 'CANCELLED', 'REFUNDED'].includes(order.status)
+  const etaDate =
+    order.confirmedAt && order.estimatedDeliveryMinutes
+      ? new Date(new Date(order.confirmedAt).getTime() + order.estimatedDeliveryMinutes * 60000)
+      : null
+  const minsLeft = etaDate ? Math.round((etaDate.getTime() - Date.now()) / 60000) : null
 
   return (
     <div className="section py-8 md:py-12 max-w-2xl">
@@ -82,6 +93,22 @@ export default function OrderDetailPage() {
             {t.order.liveTracking}
           </h2>
         </div>
+
+        {/* Live ETA */}
+        {isActiveOrder && etaDate && (
+          <div className="flex items-center justify-center gap-2 mb-5 bg-brand-saffron/10 text-amber-700 rounded-xl px-3 py-2.5 text-sm font-semibold">
+            <Clock className="w-4 h-4" />
+            <span className={language === 'te' ? 'font-telugu' : ''}>
+              {minsLeft !== null && minsLeft > 1
+                ? language === 'te'
+                  ? `సుమారు ${minsLeft} నిమిషాల్లో వస్తుంది`
+                  : `Arriving in ~${minsLeft} min`
+                : language === 'te'
+                  ? 'త్వరలో వస్తుంది'
+                  : 'Arriving any moment'}
+            </span>
+          </div>
+        )}
 
         {/* Step tracker */}
         <div className="relative">
@@ -208,6 +235,33 @@ export default function OrderDetailPage() {
           <Clock className="w-3 h-3" />
           {t.order.placedAt}: {formatDate(order.placedAt)}
         </p>
+      </motion.div>
+
+      {/* Rate (delivered orders) */}
+      {order.status === 'DELIVERED' && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          className="mt-5"
+        >
+          <RateOrder
+            orderId={order.id}
+            existingRating={order.rating}
+            existingComment={order.ratingComment}
+            onRated={mutate}
+          />
+        </motion.div>
+      )}
+
+      {/* Reorder */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="mt-5"
+      >
+        <ReorderButton items={order.items} full />
       </motion.div>
     </div>
   )

@@ -1,11 +1,11 @@
-import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { OrderStatus, Role } from '@prisma/client';
 import { OrdersService } from './orders.service';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Audit } from '../../common/decorators/audit.decorator';
-import { ListOrdersQueryDto, UpdateOrderStatusDto } from './dto/orders.dto';
+import { ListOrdersQueryDto, RateOrderDto, UpdateOrderStatusDto } from './dto/orders.dto';
 
 @ApiTags('orders')
 @Controller('orders')
@@ -20,6 +20,15 @@ export class OrdersController {
   @Get(':id')
   getOne(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string) {
     return this.orders.getOneForCustomer(user.sub, id);
+  }
+
+  @Post(':id/rating')
+  rate(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') id: string,
+    @Body() dto: RateOrderDto,
+  ) {
+    return this.orders.rateOrder(user.sub, id, dto.rating, dto.comment);
   }
 }
 

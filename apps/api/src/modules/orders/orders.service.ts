@@ -58,6 +58,19 @@ export class OrdersService {
     return order;
   }
 
+  async rateOrder(userId: string, orderId: string, rating: number, comment?: string) {
+    const order = await this.prisma.order.findFirst({ where: { id: orderId, userId } });
+    if (!order) throw new NotFoundException('Order not found');
+    if (order.status !== OrderStatus.DELIVERED) {
+      throw new BadRequestException('You can rate an order only after it is delivered');
+    }
+    return this.prisma.order.update({
+      where: { id: orderId },
+      data: { rating, ratingComment: comment?.trim() || null, ratedAt: new Date() },
+      select: { id: true, rating: true, ratingComment: true, ratedAt: true },
+    });
+  }
+
   // ─── ADMIN ──────────────────────────────────────────────────────
 
   async listForAdmin(opts: { status?: OrderStatus; search?: string; page?: number; pageSize?: number }) {

@@ -25,6 +25,7 @@ interface CartState {
   couponCode: string
   couponDiscount: number
   addItem: (item: Omit<CartItem, 'qty'>) => void
+  addItemQty: (item: Omit<CartItem, 'qty' | 'id'>, qty: number) => void
   removeItem: (id: string) => void
   updateQty: (id: string, qty: number) => void
   clearCart: () => void
@@ -54,6 +55,23 @@ export const useCartStore = create<CartState>()(
             }
           }
           return { items: [...state.items, { ...item, id: key, qty: 1 }] }
+        }),
+
+      // Add a specific quantity (used by reorder / upsell). Merges with any
+      // existing line for the same item+variant.
+      addItemQty: (item, qty) =>
+        set((state) => {
+          const key = `${item.menuItemId}-${item.variantId}`
+          const add = Math.max(1, Math.floor(qty))
+          const existing = state.items.find((i) => i.id === key)
+          if (existing) {
+            return {
+              items: state.items.map((i) =>
+                i.id === key ? { ...i, qty: i.qty + add } : i
+              ),
+            }
+          }
+          return { items: [...state.items, { ...item, id: key, qty: add }] }
         }),
 
       removeItem: (id) =>

@@ -1,11 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Heart } from 'lucide-react'
 import { PlusIcon, MinusIcon, StarIcon } from '@/components/icons'
+import { DishQuickView } from '@/components/menu/dish-quick-view'
 import { useCartStore } from '@/store/cart-store'
 import { useLanguageStore } from '@/store/language-store'
+import { useFavourites } from '@/store/favourites-store'
 import { formatCurrency, cn } from '@/lib/utils'
 import { cardImage } from '@/lib/food-images'
 import { toast } from 'sonner'
@@ -14,7 +17,14 @@ import type { UiMenuItem } from '@/lib/hooks'
 export function DishRow({ item }: { item: UiMenuItem }) {
   const { language } = useLanguageStore()
   const { addItem, items, updateQty } = useCartStore()
+  const favHas = useFavourites((s) => s.has)
+  const favToggle = useFavourites((s) => s.toggle)
   const [selectedId, setSelectedId] = useState(item.variants[0]?.id)
+  // localStorage favourites are client-only — guard against hydration mismatch.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const isFav = mounted && favHas(item.id)
+  const [quickView, setQuickView] = useState(false)
 
   const variant = item.variants.find((v) => v.id === selectedId) ?? item.variants[0]
   const cartKey = `${item.id}-${selectedId}`
@@ -46,15 +56,23 @@ export function DishRow({ item }: { item: UiMenuItem }) {
   }
 
   return (
+    <>
     <div className={cn('flex gap-3.5 py-4', !item.isAvailable && 'opacity-60')}>
-      {/* photo */}
-      <div className="relative w-[96px] h-[96px] rounded-2xl overflow-hidden shrink-0 bg-muted self-start">
+      {/* photo (tap to quick-view) */}
+      <div onClick={() => setQuickView(true)} className="relative w-[96px] h-[96px] rounded-2xl overflow-hidden shrink-0 bg-muted self-start cursor-pointer">
         <Image src={displaySrc} alt={item.name} fill sizes="96px" className="object-cover" onError={() => setImgBroken(true)} />
         {!item.isAvailable && (
           <div className="absolute inset-0 bg-foreground/55 flex items-center justify-center px-1">
             <span className="text-white text-[10px] font-semibold text-center leading-tight">{language === 'te' ? 'అందుబాటులో లేదు' : 'Unavailable'}</span>
           </div>
         )}
+        <button
+          onClick={(e) => { e.stopPropagation(); favToggle(item.id) }}
+          aria-label={isFav ? 'Remove from favourites' : 'Save to favourites'}
+          className="absolute top-1 right-1 w-7 h-7 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center active:scale-90 transition-transform"
+        >
+          <Heart className={cn('w-3.5 h-3.5 transition-colors', isFav ? 'fill-brand-red text-brand-red' : 'text-white')} />
+        </button>
       </div>
 
       {/* info — price + action pinned to the bottom so every row reads uniform */}
@@ -70,7 +88,7 @@ export function DishRow({ item }: { item: UiMenuItem }) {
           )}
         </div>
 
-        <h3 className={cn('mt-1 text-[15px] font-semibold text-foreground leading-snug line-clamp-2', language === 'te' ? 'font-telugu' : 'font-display')}>
+        <h3 onClick={() => setQuickView(true)} className={cn('mt-1 text-[15px] font-semibold text-foreground leading-snug line-clamp-2 cursor-pointer', language === 'te' ? 'font-telugu' : 'font-display')}>
           {name}
         </h3>
         {desc && (
@@ -144,5 +162,16 @@ export function DishRow({ item }: { item: UiMenuItem }) {
         </div>
       </div>
     </div>
+
+    <DishQuickView
+      item={item}
+      image={displaySrc}
+      open={quickView}
+      onClose={() => setQuickView(false)}
+      selectedId={selectedId}
+      onSelect={setSelectedId}
+      onAdd={() => { add(); setQuickView(false) }}
+    />
+    </>
   )
 }

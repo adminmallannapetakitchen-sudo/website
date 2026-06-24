@@ -2,6 +2,7 @@ import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { BottomNav } from '@/components/layout/bottom-nav'
 import { FloatingCartBar } from '@/components/shared/floating-cart-bar'
+import { InstallPrompt } from '@/components/shared/install-prompt'
 import { SwrFallback } from '@/components/providers/swr-fallback'
 import { getPublicFallback } from '@/lib/server-api'
 
@@ -21,6 +22,7 @@ export default async function PublicLayout({ children }: { children: React.React
         <Footer />
         <FloatingCartBar />
         <BottomNav />
+        <InstallPrompt />
       </div>
     </SwrFallback>
   )

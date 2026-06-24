@@ -56,6 +56,7 @@ export default function CheckoutPage() {
   const [selectedAddress, setSelectedAddress] = useState<string>('')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('RAZORPAY')
   const [placing, setPlacing] = useState(false)
+  const [paymentFailed, setPaymentFailed] = useState(false)
   const [quote, setQuote] = useState<QuoteBreakdown | null>(null)
   const [quoteLoading, setQuoteLoading] = useState(true)
   const [showAddrForm, setShowAddrForm] = useState(false)
@@ -181,6 +182,7 @@ export default function CheckoutPage() {
     if (needsPhone) return toast.error('Please verify your phone number first')
     if (quote && !quote.kitchenIsOpen) return toast.error('Kitchen is currently closed')
     setPlacing(true)
+    setPaymentFailed(false)
     try {
       const res = await placeOrder({
         addressId: selectedAddress,
@@ -194,10 +196,24 @@ export default function CheckoutPage() {
           // Local/dev mock gateway — there's no real Cashfree session, auto-confirm.
           await verifyPayment({ internalOrderId: res.order.id })
         } else {
-          await payWithCashfree(res.cashfree)
-          // Cashfree has no client signature — the server confirms by fetching
-          // the order status. Retry briefly to absorb status-propagation lag.
-          await verifyWithRetry(res.order.id)
+          try {
+            await payWithCashfree(res.cashfree)
+            // Cashfree has no client signature — the server confirms by fetching
+            // the order status. Retry briefly to absorb status-propagation lag.
+            await verifyWithRetry(res.order.id)
+          } catch (payErr: any) {
+            // The order exists (PENDING_PAYMENT) but payment didn't complete.
+            // Keep the cart + same idempotency key so "Retry payment" resumes
+            // the very same order instead of creating a new one.
+            setPaymentFailed(true)
+            const cancelled = /cancel|dropped|closed/i.test(payErr?.message ?? '')
+            toast.error(
+              cancelled
+                ? 'Payment cancelled — your items are saved. Tap "Retry payment".'
+                : 'Payment did not complete — tap "Retry payment" to try again.',
+            )
+            return
+          }
         }
       }
 
@@ -414,6 +430,14 @@ export default function CheckoutPage() {
                 </div>
               )}
 
+              {paymentFailed && (
+                <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  {language === 'te'
+                    ? 'చెల్లింపు పూర్తి కాలేదు. మీ వస్తువులు భద్రంగా ఉన్నాయి — మళ్లీ ప్రయత్నించండి.'
+                    : 'Payment didn’t go through. Your items are saved — tap below to retry.'}
+                </div>
+              )}
+
               <Button
                 className="w-full"
                 size="lg"
@@ -422,7 +446,11 @@ export default function CheckoutPage() {
                 onClick={handlePlaceOrder}
                 iconRight={!placing ? <ChevronRight className="w-5 h-5" /> : undefined}
               >
-                <span className={language === 'te' ? 'font-telugu' : ''}>{t.checkout.placeOrder}</span>
+                <span className={language === 'te' ? 'font-telugu' : ''}>
+                  {paymentFailed
+                    ? language === 'te' ? 'మళ్లీ చెల్లించండి' : 'Retry payment'
+                    : t.checkout.placeOrder}
+                </span>
               </Button>
 
               <p className="text-xs text-muted-foreground text-center inline-flex items-center justify-center gap-1.5 w-full">

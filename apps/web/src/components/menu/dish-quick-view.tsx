@@ -47,7 +47,7 @@ export function DishQuickView({
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 32, stiffness: 320 }}
-            className="fixed inset-x-0 bottom-0 z-[70] mx-auto w-full max-w-lg rounded-t-3xl bg-card shadow-float md:inset-x-auto md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl overflow-hidden"
+            className="fixed inset-x-0 bottom-0 z-[70] mx-auto w-full max-w-lg max-h-[88vh] overflow-y-auto overscroll-contain rounded-t-3xl bg-card shadow-float md:inset-x-auto md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl md:max-h-[85vh]"
           >
             <div className="relative h-52 w-full bg-muted">
               <Image src={image} alt={item.name} fill sizes="(max-width:768px) 100vw, 512px" className="object-cover" />

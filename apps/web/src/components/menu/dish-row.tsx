@@ -17,13 +17,14 @@ import type { UiMenuItem } from '@/lib/hooks'
 export function DishRow({ item }: { item: UiMenuItem }) {
   const { language } = useLanguageStore()
   const { addItem, items, updateQty } = useCartStore()
-  const favHas = useFavourites((s) => s.has)
+  // Subscribe to `ids` (not the `has` fn) so the heart re-renders on toggle.
+  const favIds = useFavourites((s) => s.ids)
   const favToggle = useFavourites((s) => s.toggle)
   const [selectedId, setSelectedId] = useState(item.variants[0]?.id)
   // localStorage favourites are client-only — guard against hydration mismatch.
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
-  const isFav = mounted && favHas(item.id)
+  const isFav = mounted && favIds.includes(item.id)
   const [quickView, setQuickView] = useState(false)
 
   const variant = item.variants.find((v) => v.id === selectedId) ?? item.variants[0]
@@ -69,9 +70,9 @@ export function DishRow({ item }: { item: UiMenuItem }) {
         <button
           onClick={(e) => { e.stopPropagation(); favToggle(item.id) }}
           aria-label={isFav ? 'Remove from favourites' : 'Save to favourites'}
-          className="absolute top-1 right-1 w-7 h-7 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center active:scale-90 transition-transform"
+          className="absolute top-1 right-1 w-8 h-8 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center active:scale-90 transition-transform"
         >
-          <Heart className={cn('w-3.5 h-3.5 transition-colors', isFav ? 'fill-brand-red text-brand-red' : 'text-white')} />
+          <Heart className={cn('w-4 h-4 transition-colors', isFav ? 'fill-brand-red text-brand-red' : 'text-white')} />
         </button>
       </div>
 

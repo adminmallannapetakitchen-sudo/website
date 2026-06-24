@@ -8,11 +8,18 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1
 
 async function serverGet<T>(path: string, revalidate: number): Promise<T | null> {
   try {
-    const res = await fetch(`${API_URL}${path}`, { next: { revalidate } })
-    if (!res.ok) return null
+    // Self-catching fetch (resolves null on error) so a rejection can never
+    // dangle when the timeout wins the race — that would surface as an
+    // unhandledRejection. Cap the wait so a slow/cold/down API can never block
+    // the render; we fall back to client-side SWR fetching instead.
+    const safeFetch = fetch(`${API_URL}${path}`, { next: { revalidate } }).catch(() => null)
+    const res = await Promise.race([
+      safeFetch,
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 4000)),
+    ])
+    if (!res || !res.ok) return null
     return (await res.json()) as T
   } catch {
-    // Never let a slow/down API break SSR — the client will fetch via SWR.
     return null
   }
 }

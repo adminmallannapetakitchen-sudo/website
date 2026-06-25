@@ -36,6 +36,9 @@ apps/web/public/uploads/*
 .agents/
 skills-lock.json
 
+# Product demo video project (Remotion) — local only, not part of the app
+video/
+
 # OS files
 .DS_Store
 Thumbs.db

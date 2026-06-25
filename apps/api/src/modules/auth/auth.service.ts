@@ -23,6 +23,10 @@ const LOCKOUT_MINUTES = 15;
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
+  // Precomputed argon2id hash used ONLY to equalize login response timing when
+  // an email isn't found — prevents user-enumeration via response-time analysis.
+  private readonly dummyHash = argon2.hash('mk-timing-equalizer', { type: argon2.argon2id });
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly tokens: TokensService,
@@ -72,6 +76,9 @@ export class AuthService {
     const normalized = email.toLowerCase().trim();
     const user = await this.prisma.user.findUnique({ where: { email: normalized } });
     if (!user || !user.hashedPassword) {
+      // Run a throwaway verify so the no-such-user path costs the same as a
+      // wrong-password path (defeats timing-based email enumeration).
+      await argon2.verify(await this.dummyHash, password).catch(() => false);
       throw new UnauthorizedException('Invalid credentials');
     }
 

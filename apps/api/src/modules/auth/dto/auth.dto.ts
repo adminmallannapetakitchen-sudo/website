@@ -1,9 +1,9 @@
-import { IsEmail, IsOptional, IsString, MinLength, Matches } from 'class-validator';
+import { IsEmail, IsOptional, IsString, MinLength, MaxLength, Matches } from 'class-validator';
 
 export class RegisterEmailDto {
   @IsEmail() email!: string;
-  @IsString() @MinLength(8) password!: string;
-  @IsOptional() @IsString() name?: string;
+  @IsString() @MinLength(8) @MaxLength(128) password!: string;
+  @IsOptional() @IsString() @MaxLength(100) name?: string;
   // H-2: capture the phone at registration so the kitchen can call for delivery.
   @IsOptional()
   @IsString()
@@ -13,7 +13,7 @@ export class RegisterEmailDto {
 
 export class LoginEmailDto {
   @IsEmail() email!: string;
-  @IsString() password!: string;
+  @IsString() @MaxLength(128) password!: string;
 }
 
 export class GoogleLoginDto {
@@ -46,10 +46,10 @@ export class ForgotPasswordDto {
 
 export class ResetPasswordDto {
   @IsString() token!: string;
-  @IsString() @MinLength(8) password!: string;
+  @IsString() @MinLength(8) @MaxLength(128) password!: string;
 }
 
 export class ChangePasswordDto {
-  @IsString() currentPassword!: string;
-  @IsString() @MinLength(8) newPassword!: string;
+  @IsString() @MaxLength(128) currentPassword!: string;
+  @IsString() @MinLength(8) @MaxLength(128) newPassword!: string;
 }

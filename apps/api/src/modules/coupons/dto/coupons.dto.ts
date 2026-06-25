@@ -14,6 +14,7 @@ export class CreateCouponDto {
   @Type(() => Date) @IsDate() validFrom!: Date;
   @Type(() => Date) @IsDate() validTo!: Date;
   @IsOptional() @IsBoolean() isActive?: boolean;
+  @IsOptional() @IsBoolean() isPublic?: boolean;
 }
 
 export class UpdateCouponDto {
@@ -27,8 +28,12 @@ export class UpdateCouponDto {
   @IsOptional() @Type(() => Date) @IsDate() validFrom?: Date;
   @IsOptional() @Type(() => Date) @IsDate() validTo?: Date;
   @IsOptional() @IsBoolean() isActive?: boolean;
+  @IsOptional() @IsBoolean() isPublic?: boolean;
 }
 
 export class ValidateCouponDto {
   @IsString() code!: string;
+  // Current cart subtotal so validation can check min-order & compute discount
+  // without depending on the server-side cart being in sync.
+  @IsOptional() @IsNumber() @Min(0) subtotal?: number;
 }

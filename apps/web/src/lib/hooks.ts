@@ -85,6 +85,32 @@ export function useKitchenSettings() {
   return { settings: data, isLoading, error }
 }
 
+export interface PublicCoupon {
+  code: string
+  description?: string | null
+  type: 'FLAT' | 'PERCENT'
+  value: number
+  minOrderValue: number
+  maxDiscount?: number | null
+  perUserLimit: number
+  validTo: string
+}
+
+export function usePublicCoupons() {
+  const { data, isLoading } = useSWR<any[]>('/coupons/public', swrFetcher)
+  const offers: PublicCoupon[] = ((data ?? []) as any[]).map((c) => ({
+    code: c.code,
+    description: c.description,
+    type: c.type,
+    value: Number(c.value),
+    minOrderValue: Number(c.minOrderValue),
+    maxDiscount: c.maxDiscount != null ? Number(c.maxDiscount) : null,
+    perUserLimit: Number(c.perUserLimit ?? 1),
+    validTo: c.validTo,
+  }))
+  return { offers, isLoading }
+}
+
 export function useSundaySpecial() {
   const { data, isLoading, error } = useSWR<any>('/sunday-special/current', swrFetcher)
   const norm = (s: any) => ({

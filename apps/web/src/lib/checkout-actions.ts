@@ -59,6 +59,14 @@ export async function verifyPayment(input: { internalOrderId: string }) {
   return api.post('/payments/verify', input)
 }
 
+/** Instant coupon validation against the current cart subtotal. Throws on invalid. */
+export async function validateCoupon(code: string, subtotal: number) {
+  return api.post<{ code: string; discount: number }>('/coupons/validate', {
+    code: code.toUpperCase(),
+    subtotal,
+  })
+}
+
 export async function createAddress(input: {
   label: string
   line1: string

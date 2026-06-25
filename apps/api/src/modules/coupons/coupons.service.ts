@@ -10,10 +10,41 @@ export class CouponsService {
     private readonly pricing: PricingService,
   ) {}
 
-  // Customer-facing validation: takes user's current cart subtotal into account
-  async validate(userId: string, code: string) {
+  // Customer-facing validation. Validates against the supplied cart subtotal
+  // (instant, no cart-sync needed); throws BadRequest with a clear message if
+  // the coupon is invalid for this user/order.
+  async validate(userId: string, code: string, subtotal?: number) {
+    if (subtotal != null) {
+      const cp = await this.pricing.validateCoupon(code, userId, subtotal);
+      return { code: cp.code, discount: cp.discount };
+    }
     const quote = await this.pricing.quote(userId, { couponCode: code });
     return { code: quote.couponCode, discount: quote.discount, total: quote.total };
+  }
+
+  // Public offers list for customers — active, currently valid, advertised.
+  listPublic() {
+    const now = new Date();
+    return this.prisma.coupon.findMany({
+      where: {
+        deletedAt: null,
+        isActive: true,
+        isPublic: true,
+        validFrom: { lte: now },
+        validTo: { gte: now },
+      },
+      orderBy: { value: 'desc' },
+      select: {
+        code: true,
+        description: true,
+        type: true,
+        value: true,
+        minOrderValue: true,
+        maxDiscount: true,
+        perUserLimit: true,
+        validTo: true,
+      },
+    });
   }
 
   list(opts: { active?: boolean } = {}) {
@@ -42,6 +73,7 @@ export class CouponsService {
         validFrom: dto.validFrom,
         validTo: dto.validTo,
         isActive: dto.isActive ?? true,
+        isPublic: dto.isPublic ?? false,
       },
     });
   }

@@ -20,6 +20,7 @@ import {
 import { requestAttachPhoneOtp, verifyAttachPhoneOtp } from '@/lib/auth-actions'
 import { formatCurrency, cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { CouponBox } from '@/components/shared/coupon-box'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { BottomNav } from '@/components/layout/bottom-nav'
@@ -71,6 +72,19 @@ export default function CheckoutPage() {
       const q = await getQuote(couponCode || undefined)
       setQuote(q)
     } catch (e: any) {
+      // A coupon that expired between cart and checkout would otherwise break
+      // the whole summary — drop it and re-quote so checkout still works.
+      if (couponCode) {
+        try {
+          useCartStore.getState().removeCoupon()
+          const q = await getQuote(undefined)
+          setQuote(q)
+          toast.error(e?.message ?? 'Coupon is no longer valid — removed')
+          return
+        } catch {
+          /* fall through */
+        }
+      }
       toast.error(e?.message ?? 'Could not load order summary')
     } finally {
       setQuoteLoading(false)
@@ -358,8 +372,10 @@ export default function CheckoutPage() {
               </motion.div>
             </div>
 
-            {/* Order summary */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="card p-5 space-y-4 h-fit">
+            {/* Right column: coupons + summary */}
+            <div className="space-y-4 h-fit">
+            <CouponBox subtotal={sub} />
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="card p-5 space-y-4">
               <h2 className={cn('font-semibold text-foreground', language === 'te' ? 'font-telugu' : '')}>{t.checkout.orderSummary}</h2>
 
               <div className="space-y-2 max-h-48 overflow-y-auto scrollbar-thin">
@@ -490,6 +506,7 @@ export default function CheckoutPage() {
                 <LockIcon size={13} /> Your order &amp; payment information is secure
               </p>
             </motion.div>
+            </div>
           </div>
         </div>
       </main>

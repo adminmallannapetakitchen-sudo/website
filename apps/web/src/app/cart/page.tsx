@@ -3,47 +3,32 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Trash2, Tag } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 import { PlusIcon, MinusIcon, ArrowRightIcon, BagIcon, BowlIcon } from '@/components/icons'
 import { useCartStore } from '@/store/cart-store'
 import { useLanguageStore } from '@/store/language-store'
 import { formatCurrency, cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { BottomNav } from '@/components/layout/bottom-nav'
 import { useKitchenSettings } from '@/lib/hooks'
 import { CartUpsell } from '@/components/shared/cart-upsell'
-import { useState } from 'react'
-import { toast } from 'sonner'
+import { CouponBox } from '@/components/shared/coupon-box'
 
 export default function CartPage() {
   const { t, language } = useLanguageStore()
-  const { items, updateQty, removeItem, subtotal, couponCode, applyCoupon, removeCoupon } = useCartStore()
+  const { items, updateQty, removeItem, subtotal, couponDiscount } = useCartStore()
   const { settings } = useKitchenSettings()
-  const [couponInput, setCouponInput] = useState('')
-  const [couponError, setCouponError] = useState('')
 
   // Delivery fee comes from the real kitchen settings (was hardcoded ₹40,
   // which disagreed with the live ₹60 and the checkout total).
   const deliveryFee = settings ? Number(settings.deliveryFee) : null
   const sub = subtotal()
-  // Coupon discounts are validated & applied SERVER-SIDE at checkout. We no
-  // longer fake a discount here (the old MOCK_COUPONS even contained codes
-  // like SAVE20P that don't exist on the backend), so the cart estimate can
-  // never diverge from the authoritative checkout total.
-  const total = sub + (sub > 0 && deliveryFee !== null ? deliveryFee : 0)
-
-  const handleApplyCoupon = () => {
-    const code = couponInput.trim().toUpperCase()
-    if (!code) return
-    // Store the code only; the server validates it at checkout.
-    applyCoupon(code, 0)
-    toast.success(`Coupon "${code}" will be applied at checkout if valid`)
-    setCouponError('')
-    setCouponInput('')
-  }
+  // The coupon is now validated instantly when applied (CouponBox), so the
+  // discount is a real, server-checked value — safe to reflect in the cart.
+  const discount = sub > 0 ? Math.min(couponDiscount, sub) : 0
+  const total = Math.max(0, sub - discount) + (sub > 0 && deliveryFee !== null ? deliveryFee : 0)
 
   if (items.length === 0) {
     return (
@@ -167,34 +152,8 @@ export default function CartPage() {
 
             {/* Order summary */}
             <div className="space-y-4">
-              {/* Coupon */}
-              <div className="card p-4">
-                <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <Tag className="w-4 h-4 text-brand-saffron" />
-                  {t.cart.coupon}
-                </h3>
-                {couponCode ? (
-                  <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-                    <span className="text-green-700 font-semibold text-sm">{couponCode} — applied at checkout</span>
-                    <button onClick={removeCoupon} className="text-green-600 hover:text-red-600 text-xs font-medium transition-colors">
-                      {t.cart.remove}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <input
-                      value={couponInput}
-                      onChange={(e) => { setCouponInput(e.target.value); setCouponError('') }}
-                      onKeyDown={(e) => e.key === 'Enter' && handleApplyCoupon()}
-                      placeholder={t.checkout.enterCoupon}
-                      className={cn('flex-1 input text-sm', couponError && 'border-red-400')}
-                    />
-                    <Button size="sm" onClick={handleApplyCoupon}>{t.cart.apply}</Button>
-                  </div>
-                )}
-                {couponError && <p className="text-xs text-red-600 mt-1">{couponError}</p>}
-                <p className="text-xs text-muted-foreground mt-2">Try: FIRST50, WELCOME100</p>
-              </div>
+              {/* Coupons & offers — instant validation */}
+              <CouponBox subtotal={sub} />
 
               {/* Price breakdown */}
               <div className="card p-4 space-y-3">
@@ -206,6 +165,12 @@ export default function CartPage() {
                     <span className="text-muted-foreground">{t.cart.subtotal}</span>
                     <span>{formatCurrency(sub)}</span>
                   </div>
+                  {discount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>{language === 'te' ? 'కూపన్ తగ్గింపు' : 'Coupon discount'}</span>
+                      <span>-{formatCurrency(discount)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">{t.cart.delivery}</span>
                     <span>
@@ -222,7 +187,7 @@ export default function CartPage() {
                   <span className="text-brand-red">{formatCurrency(total)}</span>
                 </div>
                 <p className="text-[11px] text-muted-foreground">
-                  Coupons &amp; final total are confirmed at checkout.
+                  {language === 'te' ? 'తుది మొత్తం చెక్‌అవుట్‌లో నిర్ధారించబడుతుంది.' : 'Final total is confirmed at checkout.'}
                 </p>
                 <Link href="/checkout" className="block">
                   <Button className="w-full" size="lg" iconRight={<ArrowRightIcon size={18} />}>

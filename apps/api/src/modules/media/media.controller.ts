@@ -1,9 +1,9 @@
 import { Controller, Get, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
 import { MediaService } from './media.service';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
+import { PERMISSIONS } from '../../common/permissions';
 
 // Minimal shape of a Multer memory-storage file (avoids an @types/multer dep).
 interface UploadedImage {
@@ -15,7 +15,7 @@ interface UploadedImage {
 
 @ApiTags('admin/media')
 @Controller('admin/media')
-@Roles(Role.OWNER, Role.MANAGER)
+@RequirePermissions(PERMISSIONS.MENU_MANAGE)
 export class MediaController {
   constructor(private readonly media: MediaService) {}
 

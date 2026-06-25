@@ -1,9 +1,9 @@
 import { Body, Controller, Delete, Get, Header, Param, Patch, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
 import { CategoriesService } from './categories.service';
 import { Public } from '../../common/decorators/public.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
+import { PERMISSIONS } from '../../common/permissions';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
 import { Audit } from '../../common/decorators/audit.decorator';
 
@@ -22,7 +22,7 @@ export class CategoriesController {
 
 @ApiTags('admin/categories')
 @Controller('admin/categories')
-@Roles(Role.OWNER, Role.MANAGER)
+@RequirePermissions(PERMISSIONS.MENU_MANAGE)
 export class AdminCategoriesController {
   constructor(private readonly categories: CategoriesService) {}
 

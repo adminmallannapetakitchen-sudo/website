@@ -1,10 +1,10 @@
 import { Body, Controller, Get, Header, Patch } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { IsBoolean, IsEmail, IsInt, IsOptional, IsNumber, IsString } from 'class-validator';
-import { Role } from '@prisma/client';
 import { KitchenSettingsService } from './kitchen-settings.service';
 import { Public } from '../../common/decorators/public.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
+import { PERMISSIONS } from '../../common/permissions';
 import { Audit } from '../../common/decorators/audit.decorator';
 
 class UpdateKitchenSettingsDto {
@@ -17,6 +17,7 @@ class UpdateKitchenSettingsDto {
   @IsOptional() @IsString() instagramUrl?: string;
   @IsOptional() @IsNumber() minOrderValue?: number;
   @IsOptional() @IsNumber() deliveryFee?: number;
+  @IsOptional() @IsBoolean() codEnabled?: boolean;
   @IsOptional() @IsInt() estimatedPrepMinutes?: number;
   @IsOptional() @IsString() closedMessage?: string;
 }
@@ -38,7 +39,7 @@ export class KitchenSettingsController {
 
 @ApiTags('admin/kitchen-settings')
 @Controller('admin/kitchen-settings')
-@Roles(Role.OWNER, Role.MANAGER)
+@RequirePermissions(PERMISSIONS.SETTINGS_MANAGE)
 export class AdminKitchenSettingsController {
   constructor(private readonly settings: KitchenSettingsService) {}
 

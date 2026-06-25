@@ -113,6 +113,6 @@ export class AuthController {
 
   @Get('me')
   me(@CurrentUser() user: CurrentUserPayload) {
-    return user;
+    return this.auth.getMe(user.sub);
   }
 }

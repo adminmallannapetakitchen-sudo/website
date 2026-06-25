@@ -15,6 +15,7 @@ import { GoogleVerifierService } from './google-verifier.service';
 import { SMS_SERVICE, SmsService } from './sms/sms.service';
 import { normalizePhoneToE164 } from '../../common/utils/phone';
 import { Role } from '@prisma/client';
+import { effectivePermissions } from '../../common/permissions';
 
 const MAX_FAILED_LOGINS = 5;
 const LOCKOUT_MINUTES = 15;
@@ -69,7 +70,7 @@ export class AuthService {
     });
 
     const tokens = await this.tokens.issueTokens(user, { userAgent: meta.ua, ipAddress: meta.ip });
-    return { user: this.sanitizeUser(user), ...tokens };
+    return { user: await this.sanitizeUser(user), ...tokens };
   }
 
   async loginWithEmail(email: string, password: string, meta: { ip?: string; ua?: string } = {}) {
@@ -114,7 +115,7 @@ export class AuthService {
     });
 
     const tokens = await this.tokens.issueTokens(user, { userAgent: meta.ua, ipAddress: meta.ip });
-    return { user: this.sanitizeUser(user), ...tokens };
+    return { user: await this.sanitizeUser(user), ...tokens };
   }
 
   // ─── GOOGLE ──────────────────────────────────────────────────────────
@@ -146,7 +147,7 @@ export class AuthService {
     await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
 
     const tokens = await this.tokens.issueTokens(user, { userAgent: meta.ua, ipAddress: meta.ip });
-    return { user: this.sanitizeUser(user), ...tokens };
+    return { user: await this.sanitizeUser(user), ...tokens };
   }
 
   // ─── PHONE OTP ───────────────────────────────────────────────────────
@@ -225,7 +226,7 @@ export class AuthService {
     await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
 
     const tokens = await this.tokens.issueTokens(user, { userAgent: meta.ua, ipAddress: meta.ip });
-    return { user: this.sanitizeUser(user), ...tokens };
+    return { user: await this.sanitizeUser(user), ...tokens };
   }
 
   // ─── ATTACH PHONE TO EXISTING ACCOUNT (H-2) ──────────────────────────
@@ -295,7 +296,7 @@ export class AuthService {
       where: { id: userId },
       data: { phoneE164, phoneVerifiedAt: new Date() },
     });
-    return { ok: true, user: this.sanitizeUser(user) };
+    return { ok: true, user: await this.sanitizeUser(user) };
   }
 
   // ─── REFRESH / LOGOUT ────────────────────────────────────────────────
@@ -381,13 +382,41 @@ export class AuthService {
 
   // ─── HELPER ──────────────────────────────────────────────────────────
 
-  private sanitizeUser(user: { id: string; email: string | null; phoneE164: string | null; name: string | null; role: Role }) {
+  private async sanitizeUser(user: {
+    id: string;
+    email: string | null;
+    phoneE164: string | null;
+    name: string | null;
+    role: Role;
+    staffRoleId?: string | null;
+  }) {
+    let staffPerms: string[] | null = null;
+    let staffRoleName: string | null = null;
+    if (user.role !== Role.OWNER && user.staffRoleId) {
+      const sr = await this.prisma.staffRole.findUnique({
+        where: { id: user.staffRoleId },
+        select: { name: true, permissions: true },
+      });
+      if (sr) {
+        staffPerms = sr.permissions;
+        staffRoleName = sr.name;
+      }
+    }
     return {
       id: user.id,
       email: user.email,
       phone: user.phoneE164,
       name: user.name,
       role: user.role,
+      staffRoleName,
+      permissions: effectivePermissions(user.role, staffPerms),
     };
+  }
+
+  /** Fresh profile for /auth/me — reloads role + permissions from the DB. */
+  async getMe(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.deletedAt) throw new NotFoundException('User not found');
+    return this.sanitizeUser(user);
   }
 }

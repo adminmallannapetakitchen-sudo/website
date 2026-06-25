@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { loginWithEmail, requestPhoneOtp, verifyPhoneOtp } from '@/lib/auth-actions'
+import { useAuthStore } from '@/store/auth-store'
 
 export default function LoginPage() {
   const { t, language } = useLanguageStore()
@@ -25,8 +26,13 @@ export default function LoginPage() {
   const [otp, setOtp] = useState('')
   const [otpSent, setOtpSent] = useState(false)
 
+  // Send staff straight to where they work: delivery-only people to their
+  // delivery screen, other staff to the admin panel, customers home.
   const goHome = () => {
-    router.push('/')
+    const st = useAuthStore.getState()
+    if (st.isDelivery() && !st.isAdmin()) router.push('/delivery')
+    else if (st.isAdmin()) router.push('/admin')
+    else router.push('/')
     router.refresh()
   }
 

@@ -12,6 +12,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { LockModule } from './common/lock/lock.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
+import { StaffRolesModule } from './modules/staff-roles/staff-roles.module';
+import { DeliveryModule } from './modules/delivery/delivery.module';
 import { MenuModule } from './modules/menu/menu.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { KitchenSettingsModule } from './modules/kitchen-settings/kitchen-settings.module';
@@ -33,6 +35,7 @@ import { MailModule } from './modules/mail/mail.module';
 import { MediaModule } from './modules/media/media.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { PermissionsGuard } from './common/guards/permissions.guard';
 import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
 
 @Module({
@@ -78,6 +81,8 @@ import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor
     LockModule,
     AuthModule,
     UsersModule,
+    StaffRolesModule,
+    DeliveryModule,
     MenuModule,
     CategoriesModule,
     KitchenSettingsModule,
@@ -102,6 +107,7 @@ import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_GUARD, useClass: PermissionsGuard },
     { provide: APP_INTERCEPTOR, useClass: AuditLogInterceptor },
   ],
 })

@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { useCartStore } from '@/store/cart-store'
 import { useLanguageStore } from '@/store/language-store'
 import { useAuthStore } from '@/store/auth-store'
-import { useAddresses } from '@/lib/hooks'
+import { useAddresses, useKitchenSettings } from '@/lib/hooks'
 import {
   syncCartToServer,
   getQuote,
@@ -54,6 +54,10 @@ export default function CheckoutPage() {
   const [otpSent, setOtpSent] = useState(false)
   const [phoneBusy, setPhoneBusy] = useState(false)
 
+  const { settings: kitchenSettings } = useKitchenSettings()
+  // Default to allowed while settings load; only hide COD once we know it's off.
+  const codEnabled = kitchenSettings ? kitchenSettings.codEnabled !== false : true
+
   const [selectedAddress, setSelectedAddress] = useState<string>('')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('RAZORPAY')
   const [placing, setPlacing] = useState(false)
@@ -63,6 +67,11 @@ export default function CheckoutPage() {
   const [tip, setTip] = useState(0)
   const [showAddrForm, setShowAddrForm] = useState(false)
   const [newAddr, setNewAddr] = useState({ label: 'Home', line1: '', city: 'Jagtial', pincode: '505327' })
+
+  // If COD gets disabled while it was the selected method, fall back to online.
+  useEffect(() => {
+    if (!codEnabled && paymentMethod === 'COD') setPaymentMethod('RAZORPAY')
+  }, [codEnabled, paymentMethod])
 
   const refreshQuote = useCallback(async () => {
     if (!isAuthed || items.length === 0) return
@@ -352,7 +361,9 @@ export default function CheckoutPage() {
                 <div className="grid sm:grid-cols-2 gap-3">
                   {([
                     { id: 'RAZORPAY' as PaymentMethod, icon: CreditCard, title: language === 'te' ? 'ఆన్‌లైన్ చెల్లింపు' : 'Pay Online', desc: 'UPI · Cards · Netbanking · Wallets' },
-                    { id: 'COD' as PaymentMethod, icon: Banknote, title: t.checkout.cod, desc: t.checkout.codNote },
+                    ...(codEnabled
+                      ? [{ id: 'COD' as PaymentMethod, icon: Banknote, title: t.checkout.cod, desc: t.checkout.codNote }]
+                      : []),
                   ]).map((pm) => (
                     <motion.button
                       key={pm.id}

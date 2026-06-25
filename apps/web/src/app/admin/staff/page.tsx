@@ -1,10 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import useSWR from 'swr'
 import { motion } from 'framer-motion'
 import { Search, ShieldCheck, Mail, Phone } from 'lucide-react'
 import { useAdminUsers } from '@/lib/hooks'
-import { updateUserRole } from '@/lib/admin-actions'
+import { updateUserRole, assignUserStaffRole } from '@/lib/admin-actions'
+import { swrFetcher } from '@/lib/api-client'
 import { useAuthStore } from '@/store/auth-store'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -22,6 +24,7 @@ export default function AdminStaffPage() {
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('ALL')
   const { users, isLoading, mutate } = useAdminUsers(search, roleFilter)
+  const { data: roles } = useSWR<any[]>('/admin/roles', swrFetcher)
   const me = useAuthStore((s) => s.user)
   const [savingId, setSavingId] = useState<string | null>(null)
 
@@ -33,6 +36,19 @@ export default function AdminStaffPage() {
       toast.success(`Role updated to ${role.replace(/_/g, ' ')}`)
     } catch (e: any) {
       toast.error(e?.message ?? 'Could not update role')
+    } finally {
+      setSavingId(null)
+    }
+  }
+
+  const changeStaffRole = async (id: string, staffRoleId: string) => {
+    setSavingId(id)
+    try {
+      await assignUserStaffRole(id, staffRoleId || null)
+      await mutate()
+      toast.success(staffRoleId ? 'Custom role assigned' : 'Custom role removed')
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Could not assign role')
     } finally {
       setSavingId(null)
     }
@@ -89,6 +105,7 @@ export default function AdminStaffPage() {
                 <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground hidden md:table-cell">Orders</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Current</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Set Role</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Custom Role</th>
               </tr>
             </thead>
             <tbody>
@@ -124,6 +141,20 @@ export default function AdminStaffPage() {
                       >
                         {ROLES.map((r) => (
                           <option key={r} value={r}>{r.replace(/_/g, ' ')}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-4 py-3">
+                      <select
+                        value={u.staffRoleId ?? ''}
+                        disabled={savingId === u.id}
+                        onChange={(e) => changeStaffRole(u.id, e.target.value)}
+                        className="border border-input rounded-lg px-2 py-1.5 text-xs bg-card disabled:opacity-50"
+                        title="A custom role overrides the built-in role's access"
+                      >
+                        <option value="">— None —</option>
+                        {(roles ?? []).map((r: any) => (
+                          <option key={r.id} value={r.id}>{r.name}</option>
                         ))}
                       </select>
                     </td>

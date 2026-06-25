@@ -1,14 +1,18 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import useSWR from 'swr'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Filter, ChevronDown, Clock, CheckCircle, Package, Truck, Home, X, Phone } from 'lucide-react'
+import { Search, Filter, ChevronDown, Clock, CheckCircle, Package, Truck, Home, X, Phone, Bike } from 'lucide-react'
 import { formatCurrency, formatDate, cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { useAdminOrders } from '@/lib/hooks'
 import { useAdminOrderAlerts } from '@/lib/realtime-hooks'
-import { api } from '@/lib/api-client'
+import { api, swrFetcher } from '@/lib/api-client'
+import { assignOrderDelivery } from '@/lib/admin-actions'
+import { useAuthStore } from '@/store/auth-store'
+import { PERM } from '@/lib/permissions'
 
 const STATUS_FLOW = ['CONFIRMED', 'PREPARING', 'OUT_FOR_DELIVERY', 'DELIVERED'] as const
 const STATUS_CONFIG = {
@@ -72,6 +76,8 @@ export default function AdminOrdersPage() {
         paymentMethod: o.paymentMethod,
         paymentStatus: o.payment?.status as string | undefined,
         specialInstructions: o.specialInstructions as string | undefined,
+        deliveryUserId: (o.deliveryUserId ?? null) as string | null,
+        deliveryUserName: (o.deliveryUser?.name ?? null) as string | null,
       })),
     [apiOrders]
   )
@@ -85,6 +91,13 @@ export default function AdminOrdersPage() {
     return matchStatus && matchSearch
   })
 
+  // Only staff who can manage orders may (re)assign delivery people.
+  const canManage = useAuthStore((s) => s.hasPermission(PERM.ORDERS_MANAGE))
+  const { data: deliveryPeople } = useSWR<any[]>(
+    canManage ? '/admin/orders/delivery-people' : null,
+    swrFetcher,
+  )
+
   const updateStatus = async (orderId: string, newStatus: string) => {
     try {
       await api.patch(`/admin/orders/${orderId}/status`, { status: newStatus })
@@ -92,6 +105,16 @@ export default function AdminOrdersPage() {
       toast.success(`Order status updated to ${newStatus.replace(/_/g, ' ')}`)
     } catch (e: any) {
       toast.error(e?.message ?? 'Could not update status')
+    }
+  }
+
+  const assignDelivery = async (orderId: string, deliveryUserId: string) => {
+    try {
+      await assignOrderDelivery(orderId, deliveryUserId || null)
+      await mutate()
+      toast.success(deliveryUserId ? 'Delivery person assigned' : 'Delivery person cleared')
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Could not assign delivery')
     }
   }
 
@@ -231,6 +254,38 @@ export default function AdminOrdersPage() {
                   <p className="text-muted-foreground text-xs">Delivery Address</p>
                   <p className="font-medium">{selectedOrder.address}</p>
                 </div>
+
+                {/* Delivery person — assign so they see it on their delivery screen */}
+                {canManage && !['DELIVERED', 'CANCELLED', 'REFUNDED'].includes(selectedOrder.status) && (
+                  <div>
+                    <p className="text-muted-foreground text-xs mb-1 flex items-center gap-1">
+                      <Bike className="w-3.5 h-3.5" /> Delivery person
+                    </p>
+                    {(deliveryPeople ?? []).length === 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        No delivery staff yet — create a “Delivery” role on the Roles page and assign it to someone.
+                      </p>
+                    ) : (
+                      <select
+                        value={selectedOrder.deliveryUserId ?? ''}
+                        onChange={(e) => assignDelivery(selectedOrder.id, e.target.value)}
+                        className="w-full border border-input rounded-lg px-2 py-2 text-sm bg-card"
+                      >
+                        <option value="">— Not assigned —</option>
+                        {(deliveryPeople ?? []).map((p: any) => (
+                          <option key={p.id} value={p.id}>{p.name ?? p.phoneE164 ?? 'Staff'}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                )}
+                {!canManage && selectedOrder.deliveryUserName && (
+                  <div>
+                    <p className="text-muted-foreground text-xs">Delivery person</p>
+                    <p className="font-medium">{selectedOrder.deliveryUserName}</p>
+                  </div>
+                )}
+
                 <div>
                   <p className="text-muted-foreground text-xs">Placed</p>
                   <p className="font-medium">{agoLabel(selectedOrder.time)} · {formatDate(selectedOrder.time)}</p>

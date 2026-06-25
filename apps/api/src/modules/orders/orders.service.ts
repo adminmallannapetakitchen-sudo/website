@@ -1,8 +1,9 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { OrderStatus, Prisma, Role } from '@prisma/client';
+import { OrderStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { OrdersEventBus } from './orders-event-bus.service';
+import { PERMISSIONS } from '../../common/permissions';
 
 // Per business rule: customer cannot cancel; only admin can.
 // Allowed transitions:
@@ -102,6 +103,7 @@ export class OrdersService {
         include: {
           items: true,
           payment: { select: { status: true, method: true } },
+          deliveryUser: { select: { id: true, name: true } },
         },
       }),
       this.prisma.order.count({ where }),
@@ -117,6 +119,7 @@ export class OrdersService {
         statusHistory: { orderBy: { createdAt: 'asc' }, include: { actor: { select: { id: true, name: true, email: true } } } },
         payment: true,
         user: { select: { id: true, name: true, email: true, phoneE164: true } },
+        deliveryUser: { select: { id: true, name: true, phoneE164: true } },
       },
     });
     if (!order) throw new NotFoundException('Order not found');
@@ -172,5 +175,70 @@ export class OrdersService {
     await this.events.emitStatusChange(orderId, newStatus);
 
     return updated;
+  }
+
+  // ─── DELIVERY ASSIGNMENT ────────────────────────────────────────
+
+  /** Staff whose assigned role grants the delivery.own permission. */
+  async listDeliveryPeople() {
+    return this.prisma.user.findMany({
+      where: {
+        deletedAt: null,
+        staffRole: { permissions: { has: PERMISSIONS.DELIVERY_OWN } },
+      },
+      select: { id: true, name: true, phoneE164: true },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  /** Assign (or clear, when null) the delivery person for an order. */
+  async assignDelivery(orderId: string, deliveryUserId: string | null, actorUserId: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException('Order not found');
+    const terminal: OrderStatus[] = [OrderStatus.DELIVERED, OrderStatus.CANCELLED, OrderStatus.REFUNDED];
+    if (terminal.includes(order.status)) {
+      throw new BadRequestException('Cannot change delivery for a completed order');
+    }
+
+    if (deliveryUserId) {
+      const person = await this.prisma.user.findFirst({
+        where: {
+          id: deliveryUserId,
+          deletedAt: null,
+          staffRole: { permissions: { has: PERMISSIONS.DELIVERY_OWN } },
+        },
+        select: { id: true },
+      });
+      if (!person) throw new BadRequestException('Selected person is not a delivery staff member');
+    }
+
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: { deliveryUserId },
+    });
+    return this.getOneForAdmin(orderId);
+  }
+
+  // ─── DELIVERY PERSON: own orders ────────────────────────────────
+
+  /** Orders assigned to a delivery person that are out for delivery. */
+  async listForDelivery(deliveryUserId: string) {
+    return this.prisma.order.findMany({
+      where: { deliveryUserId, status: OrderStatus.OUT_FOR_DELIVERY },
+      orderBy: { outForDeliveryAt: 'asc' },
+      include: { items: true },
+    });
+  }
+
+  /** A delivery person marks their own assigned order delivered. */
+  async markDeliveredByDeliveryUser(orderId: string, deliveryUserId: string) {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, deliveryUserId },
+    });
+    if (!order) throw new NotFoundException('Order not found or not assigned to you');
+    if (order.status !== OrderStatus.OUT_FOR_DELIVERY) {
+      throw new BadRequestException('Only out-for-delivery orders can be marked delivered');
+    }
+    return this.updateStatus(orderId, OrderStatus.DELIVERED, deliveryUserId);
   }
 }

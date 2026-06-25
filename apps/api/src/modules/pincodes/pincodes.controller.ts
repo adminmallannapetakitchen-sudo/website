@@ -1,10 +1,10 @@
 import { Body, Controller, Delete, Get, Header, Param, Patch, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { IsBoolean, IsOptional, IsString, Matches } from 'class-validator';
-import { Role } from '@prisma/client';
 import { PincodesService } from './pincodes.service';
 import { Public } from '../../common/decorators/public.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
+import { PERMISSIONS } from '../../common/permissions';
 import { Audit } from '../../common/decorators/audit.decorator';
 
 class CreatePincodeDto {
@@ -33,7 +33,7 @@ export class PincodesController {
 
 @ApiTags('admin/pincodes')
 @Controller('admin/pincodes')
-@Roles(Role.OWNER, Role.MANAGER)
+@RequirePermissions(PERMISSIONS.PINCODES_MANAGE)
 export class AdminPincodesController {
   constructor(private readonly pincodes: PincodesService) {}
 

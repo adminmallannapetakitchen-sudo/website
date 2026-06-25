@@ -13,10 +13,10 @@ import {
   MinLength,
   ValidateNested,
 } from 'class-validator';
-import { Role } from '@prisma/client';
 import { SundaySpecialService } from './sunday-special.service';
 import { Public } from '../../common/decorators/public.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
+import { PERMISSIONS } from '../../common/permissions';
 import { Audit } from '../../common/decorators/audit.decorator';
 
 class SundaySpecialVariantDto {
@@ -79,7 +79,7 @@ export class SundaySpecialController {
 
 @ApiTags('admin/sunday-specials')
 @Controller('admin/sunday-specials')
-@Roles(Role.OWNER, Role.MANAGER)
+@RequirePermissions(PERMISSIONS.MENU_MANAGE)
 export class AdminSundaySpecialController {
   constructor(private readonly service: SundaySpecialService) {}
 

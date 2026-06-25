@@ -2,9 +2,9 @@ import { Controller, Get, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsDate, IsInt, IsOptional, IsString, Min } from 'class-validator';
-import { Role } from '@prisma/client';
 import { ReportsService } from './reports.service';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
+import { PERMISSIONS } from '../../common/permissions';
 
 class DateRangeDto {
   @Type(() => Date) @IsDate() from!: Date;
@@ -23,7 +23,7 @@ class CustomersQueryDto {
 
 @ApiTags('admin/reports')
 @Controller('admin/reports')
-@Roles(Role.OWNER, Role.MANAGER)
+@RequirePermissions(PERMISSIONS.REPORTS_VIEW)
 export class ReportsController {
   constructor(private readonly reports: ReportsService) {}
 
@@ -43,6 +43,7 @@ export class ReportsController {
   }
 
   @Get('customers')
+  @RequirePermissions(PERMISSIONS.CUSTOMERS_VIEW)
   customers(@Query() q: CustomersQueryDto) {
     return this.reports.customersReport(q);
   }

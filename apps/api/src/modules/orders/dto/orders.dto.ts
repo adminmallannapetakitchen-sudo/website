@@ -15,6 +15,11 @@ export class CancelOrderDto {
   @IsOptional() @IsString() @MaxLength(500) reason?: string;
 }
 
+export class AssignDeliveryDto {
+  // null / omitted unassigns the order
+  @IsOptional() @IsString() deliveryUserId?: string | null;
+}
+
 export class ListOrdersQueryDto {
   @IsOptional() @IsEnum(OrderStatus) status?: OrderStatus;
   @IsOptional() @IsString() search?: string;

@@ -1,9 +1,9 @@
 import { Body, Controller, Delete, Get, Header, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
 import { MenuService } from './menu.service';
 import { Public } from '../../common/decorators/public.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
+import { PERMISSIONS } from '../../common/permissions';
 import { Audit } from '../../common/decorators/audit.decorator';
 import { CreateMenuItemDto, ToggleAvailabilityDto, UpdateMenuItemDto } from './dto/menu.dto';
 
@@ -31,7 +31,7 @@ export class MenuController {
 
 @ApiTags('admin/menu')
 @Controller('admin/menu')
-@Roles(Role.OWNER, Role.MANAGER)
+@RequirePermissions(PERMISSIONS.MENU_MANAGE)
 export class AdminMenuController {
   constructor(private readonly menu: MenuService) {}
 

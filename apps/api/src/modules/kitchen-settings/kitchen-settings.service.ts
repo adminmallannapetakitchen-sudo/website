@@ -19,6 +19,7 @@ export class KitchenSettingsService {
       instagramUrl: settings.instagramUrl,
       minOrderValue: Number(settings.minOrderValue),
       deliveryFee: Number(settings.deliveryFee),
+      codEnabled: settings.codEnabled,
       estimatedPrepMinutes: settings.estimatedPrepMinutes,
       closedMessage: settings.closedMessage,
     };
@@ -38,6 +39,7 @@ export class KitchenSettingsService {
     instagramUrl: string;
     minOrderValue: number;
     deliveryFee: number;
+    codEnabled: boolean;
     estimatedPrepMinutes: number;
     closedMessage: string;
   }>) {

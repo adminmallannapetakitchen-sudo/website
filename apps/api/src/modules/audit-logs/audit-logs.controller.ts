@@ -1,8 +1,8 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { IsInt, IsOptional, IsString, Min } from 'class-validator';
-import { Role } from '@prisma/client';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
+import { PERMISSIONS } from '../../common/permissions';
 import { PrismaService } from '../../prisma/prisma.service';
 
 class QueryDto {
@@ -15,7 +15,7 @@ class QueryDto {
 
 @ApiTags('admin/audit-logs')
 @Controller('admin/audit-logs')
-@Roles(Role.OWNER)
+@RequirePermissions(PERMISSIONS.REPORTS_VIEW)
 export class AuditLogsController {
   constructor(private readonly prisma: PrismaService) {}
 

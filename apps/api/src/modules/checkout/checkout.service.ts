@@ -48,6 +48,12 @@ export class CheckoutService {
       throw new BadRequestException(kitchen.closedMessage ?? 'Kitchen is currently closed');
     }
 
+    // COD can be turned off by the kitchen. Enforce it server-side so it can't
+    // be forced through the API even if the UI option is hidden.
+    if (dto.paymentMethod === PaymentMethod.COD && !kitchen.codEnabled) {
+      throw new BadRequestException('Cash on delivery is currently unavailable. Please pay online.');
+    }
+
     // H-2: a reachable phone number is mandatory — the kitchen calls the
     // customer for every delivery. Email/Google signups have none.
     if (!user.phoneE164) {

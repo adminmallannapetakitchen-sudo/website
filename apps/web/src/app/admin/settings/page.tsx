@@ -12,6 +12,7 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [isOpen, setIsOpen] = useState(true)
+  const [codEnabled, setCodEnabled] = useState(true)
   const [form, setForm] = useState({
     contactPhone: '',
     contactEmail: '',
@@ -27,6 +28,7 @@ export default function AdminSettingsPage() {
     getKitchenSettings()
       .then((s: any) => {
         setIsOpen(s.isOpen)
+        setCodEnabled(s.codEnabled ?? true)
         setForm({
           contactPhone: s.contactPhone ?? '',
           contactEmail: s.contactEmail ?? '',
@@ -47,6 +49,7 @@ export default function AdminSettingsPage() {
     try {
       await updateKitchenSettings({
         isOpen,
+        codEnabled,
         contactPhone: form.contactPhone,
         contactEmail: form.contactEmail,
         instagramUrl: form.instagramUrl,
@@ -98,6 +101,24 @@ export default function AdminSettingsPage() {
           <Input label="Opening hours" value={form.openingHours} onChange={(e) => setForm({ ...form, openingHours: e.target.value })} icon={<Clock className="w-4 h-4" />} />
         </div>
         <Input label="Closed message (shown when kitchen is off)" value={form.closedMessage} onChange={(e) => setForm({ ...form, closedMessage: e.target.value })} placeholder="We're closed for the day — back tomorrow at 10 AM" />
+
+        <div className="flex items-center justify-between border-t border-border pt-4">
+          <div>
+            <p className="font-medium text-foreground text-sm">Cash on Delivery</p>
+            <p className="text-xs text-muted-foreground">
+              {codEnabled
+                ? 'Customers can choose to pay cash at delivery'
+                : 'Off — customers must pay online'}
+            </p>
+          </div>
+          <button onClick={() => setCodEnabled(!codEnabled)} aria-label="Toggle cash on delivery" type="button">
+            {codEnabled ? (
+              <ToggleRight className="w-12 h-12 text-green-500" />
+            ) : (
+              <ToggleLeft className="w-12 h-12 text-muted-foreground" />
+            )}
+          </button>
+        </div>
       </div>
 
       <div className="card p-5 space-y-4">

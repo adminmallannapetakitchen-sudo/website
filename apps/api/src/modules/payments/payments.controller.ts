@@ -1,8 +1,8 @@
 import { Body, Controller, Param, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
 import { PaymentsService } from './payments.service';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
+import { PERMISSIONS } from '../../common/permissions';
 import { Audit } from '../../common/decorators/audit.decorator';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { RefundDto, VerifyPaymentDto } from './dto/payments.dto';
@@ -20,7 +20,7 @@ export class PaymentsController {
 
 @ApiTags('admin/payments')
 @Controller('admin/payments')
-@Roles(Role.OWNER, Role.MANAGER)
+@RequirePermissions(PERMISSIONS.ORDERS_MANAGE)
 export class AdminPaymentsController {
   constructor(private readonly payments: PaymentsService) {}
 

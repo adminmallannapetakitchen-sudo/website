@@ -1,10 +1,10 @@
 import { Body, Controller, Delete, Get, Header, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
 import { CouponsService } from './coupons.service';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
+import { PERMISSIONS } from '../../common/permissions';
 import { Audit } from '../../common/decorators/audit.decorator';
 import { CreateCouponDto, UpdateCouponDto, ValidateCouponDto } from './dto/coupons.dto';
 
@@ -29,7 +29,7 @@ export class CouponsController {
 
 @ApiTags('admin/coupons')
 @Controller('admin/coupons')
-@Roles(Role.OWNER, Role.MANAGER)
+@RequirePermissions(PERMISSIONS.COUPONS_MANAGE)
 export class AdminCouponsController {
   constructor(private readonly coupons: CouponsService) {}
 

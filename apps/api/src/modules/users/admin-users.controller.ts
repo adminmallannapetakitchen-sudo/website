@@ -1,9 +1,10 @@
 import { BadRequestException, Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { IsEnum } from 'class-validator';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
 import { Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { RequirePermissions } from '../../common/decorators/permissions.decorator';
+import { PERMISSIONS } from '../../common/permissions';
 import { Audit } from '../../common/decorators/audit.decorator';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 
@@ -11,9 +12,14 @@ class UpdateRoleDto {
   @IsEnum(Role) role!: Role;
 }
 
+class AssignStaffRoleDto {
+  // null / omitted clears the custom role (falls back to the enum role's access)
+  @IsOptional() @IsString() staffRoleId?: string | null;
+}
+
 @ApiTags('admin/users')
 @Controller('admin/users')
-@Roles(Role.OWNER)
+@RequirePermissions(PERMISSIONS.STAFF_MANAGE)
 export class AdminUsersController {
   constructor(private readonly prisma: PrismaService) {}
 
@@ -37,6 +43,8 @@ export class AdminUsersController {
         email: true,
         phoneE164: true,
         role: true,
+        staffRoleId: true,
+        staffRole: { select: { id: true, name: true, permissions: true } },
         createdAt: true,
         lastLoginAt: true,
         _count: { select: { orders: true } },
@@ -84,6 +92,45 @@ export class AdminUsersController {
         data: { revokedAt: new Date() },
       });
 
+      return u;
+    });
+
+    return updated;
+  }
+
+  @Patch(':id/staff-role')
+  @Audit({ action: 'ROLE_CHANGE', entityType: 'User', entityIdParam: 'id' })
+  async assignStaffRole(
+    @Param('id') id: string,
+    @Body() dto: AssignStaffRoleDto,
+  ) {
+    const target = await this.prisma.user.findUnique({ where: { id } });
+    if (!target || target.deletedAt) throw new BadRequestException('User not found');
+
+    const staffRoleId = dto.staffRoleId ?? null;
+    if (staffRoleId) {
+      const role = await this.prisma.staffRole.findUnique({ where: { id: staffRoleId } });
+      if (!role) throw new BadRequestException('Role not found');
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const u = await tx.user.update({
+        where: { id },
+        data: { staffRoleId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phoneE164: true,
+          role: true,
+          staffRole: { select: { id: true, name: true, permissions: true } },
+        },
+      });
+      // Force a fresh login so the new permissions take effect everywhere.
+      await tx.refreshToken.updateMany({
+        where: { userId: id, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
       return u;
     });
 

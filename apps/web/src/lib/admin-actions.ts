@@ -26,6 +26,11 @@ export const updateOrderStatus = (orderId: string, status: string, notes?: strin
 export const refundOrder = (orderId: string, amount?: number, reason?: string) =>
   api.post(`/admin/payments/orders/${orderId}/refund`, { amount, reason })
 
+// Staff that can be assigned deliveries + assigning a delivery person.
+export const getDeliveryPeople = () => api.get('/admin/orders/delivery-people')
+export const assignOrderDelivery = (orderId: string, deliveryUserId: string | null) =>
+  api.patch(`/admin/orders/${orderId}/delivery`, { deliveryUserId })
+
 // ─── Menu ───
 export const createMenuItem = (body: unknown) => api.post('/admin/menu/items', body)
 export const updateMenuItem = (id: string, body: unknown) => api.patch(`/admin/menu/items/${id}`, body)
@@ -57,6 +62,18 @@ export const deleteSundaySpecial = (id: string) => api.delete(`/admin/sunday-spe
 // ─── Staff / Users ───
 export const updateUserRole = (id: string, role: string) =>
   api.patch(`/admin/users/${id}/role`, { role })
+
+export const assignUserStaffRole = (id: string, staffRoleId: string | null) =>
+  api.patch(`/admin/users/${id}/staff-role`, { staffRoleId })
+
+// ─── Roles (custom permission roles) ───
+export const getPermissionCatalog = () => api.get('/admin/roles/catalog')
+export const getStaffRoles = () => api.get('/admin/roles')
+export const createStaffRole = (body: { name: string; permissions: string[] }) =>
+  api.post('/admin/roles', body)
+export const updateStaffRole = (id: string, body: { name?: string; permissions?: string[] }) =>
+  api.patch(`/admin/roles/${id}`, body)
+export const deleteStaffRole = (id: string) => api.delete(`/admin/roles/${id}`)
 
 // ─── Kitchen Settings ───
 export const getKitchenSettings = () => api.get('/admin/kitchen-settings')

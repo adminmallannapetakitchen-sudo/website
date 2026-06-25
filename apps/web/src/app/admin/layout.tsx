@@ -20,57 +20,56 @@ import {
   ChevronRight,
   LogOut,
   ShieldCheck,
+  KeyRound,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth-store'
+import { PERM } from '@/lib/permissions'
 import { useKitchenSettings } from '@/lib/hooks'
 import { logout } from '@/lib/auth-actions'
 import { NotificationBell } from '@/components/admin/notification-bell'
 import { AdminAlerts } from '@/components/admin/admin-alerts'
-
-type StaffRole = 'OWNER' | 'MANAGER' | 'KITCHEN_STAFF'
-const ALL_STAFF: StaffRole[] = ['OWNER', 'MANAGER', 'KITCHEN_STAFF']
-const MGMT: StaffRole[] = ['OWNER', 'MANAGER']
 
 const navItems: {
   href: string
   icon: any
   label: string
   exact?: boolean
-  roles: StaffRole[]
+  perm?: string // undefined = visible to any admin user
 }[] = [
-  { href: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true, roles: ALL_STAFF },
-  { href: '/admin/orders', icon: ShoppingBag, label: 'Orders', roles: ALL_STAFF },
-  { href: '/admin/menu', icon: UtensilsCrossed, label: 'Menu', roles: MGMT },
-  { href: '/admin/categories', icon: Tag, label: 'Categories', roles: MGMT },
-  { href: '/admin/sunday-specials', icon: Sparkles, label: 'Sunday Specials', roles: MGMT },
-  { href: '/admin/coupons', icon: Tag, label: 'Coupons', roles: MGMT },
-  { href: '/admin/customers', icon: Users, label: 'Customers', roles: MGMT },
-  { href: '/admin/pincodes', icon: MapPin, label: 'Pincodes', roles: MGMT },
-  { href: '/admin/reports', icon: BarChart3, label: 'Reports', roles: MGMT },
-  { href: '/admin/staff', icon: ShieldCheck, label: 'Staff', roles: ['OWNER'] },
-  { href: '/admin/settings', icon: Settings, label: 'Settings', roles: MGMT },
+  { href: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
+  { href: '/admin/orders', icon: ShoppingBag, label: 'Orders', perm: PERM.ORDERS_VIEW },
+  { href: '/admin/menu', icon: UtensilsCrossed, label: 'Menu', perm: PERM.MENU_MANAGE },
+  { href: '/admin/categories', icon: Tag, label: 'Categories', perm: PERM.MENU_MANAGE },
+  { href: '/admin/sunday-specials', icon: Sparkles, label: 'Sunday Specials', perm: PERM.MENU_MANAGE },
+  { href: '/admin/coupons', icon: Tag, label: 'Coupons', perm: PERM.COUPONS_MANAGE },
+  { href: '/admin/customers', icon: Users, label: 'Customers', perm: PERM.CUSTOMERS_VIEW },
+  { href: '/admin/pincodes', icon: MapPin, label: 'Pincodes', perm: PERM.PINCODES_MANAGE },
+  { href: '/admin/reports', icon: BarChart3, label: 'Reports', perm: PERM.REPORTS_VIEW },
+  { href: '/admin/staff', icon: ShieldCheck, label: 'Staff', perm: PERM.STAFF_MANAGE },
+  { href: '/admin/roles', icon: KeyRound, label: 'Roles', perm: PERM.STAFF_MANAGE },
+  { href: '/admin/settings', icon: Settings, label: 'Settings', perm: PERM.SETTINGS_MANAGE },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
-  const { user, accessToken, hasHydrated } = useAuthStore()
+  const { user, accessToken, hasHydrated, isAdmin: isAdminFn, isDelivery, hasPermission } = useAuthStore()
   const { settings: kitchenSettings } = useKitchenSettings()
   const kitchenOpen = kitchenSettings ? !!kitchenSettings.isOpen : false
 
-  // Auth gate — only staff roles may access /admin
-  const isAdmin =
-    !!accessToken &&
-    !!user &&
-    (user.role === 'OWNER' || user.role === 'MANAGER' || user.role === 'KITCHEN_STAFF')
+  // Auth gate — only users with an admin permission may access /admin.
+  const isAdmin = !!accessToken && !!user && isAdminFn()
 
   // Only redirect AFTER the persisted store has rehydrated from localStorage,
-  // otherwise a logged-in admin gets bounced on first paint.
+  // otherwise a logged-in admin gets bounced on first paint. Delivery-only
+  // staff are sent to their own screen rather than the login page.
   useEffect(() => {
-    if (hasHydrated && !isAdmin) router.replace('/login')
-  }, [hasHydrated, isAdmin, router])
+    if (!hasHydrated || isAdmin) return
+    if (accessToken && user && isDelivery()) router.replace('/delivery')
+    else router.replace('/login')
+  }, [hasHydrated, isAdmin, accessToken, user, isDelivery, router])
 
   const isActive = (href: string, exact?: boolean) =>
     exact ? pathname === href : pathname.startsWith(href)
@@ -149,7 +148,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {/* Nav */}
           <nav className="flex-1 overflow-y-auto p-3 space-y-0.5">
             {navItems
-              .filter((item) => user && item.roles.includes(user.role as StaffRole))
+              .filter((item) => !item.perm || hasPermission(item.perm))
               .map((item) => (
               <Link
                 key={item.href}

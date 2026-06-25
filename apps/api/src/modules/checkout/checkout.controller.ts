@@ -11,7 +11,7 @@ export class CheckoutController {
 
   @Post('quote')
   quote(@CurrentUser() user: CurrentUserPayload, @Body() dto: QuoteDto) {
-    return this.checkout.quote(user.sub, dto.couponCode);
+    return this.checkout.quote(user.sub, dto.couponCode, dto.tip);
   }
 
   @Post('place-order')

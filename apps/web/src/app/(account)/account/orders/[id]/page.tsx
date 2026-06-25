@@ -197,6 +197,12 @@ export default function OrderDetailPage() {
             <span>{t.cart.delivery}</span>
             <span>{formatCurrency(num(order.deliveryFee))}</span>
           </div>
+          {num(order.tip) > 0 && (
+            <div className="flex justify-between text-muted-foreground">
+              <span>{language === 'te' ? 'చిట్కా' : 'Tip'}</span>
+              <span>{formatCurrency(num(order.tip))}</span>
+            </div>
+          )}
           {num(order.discount) > 0 && (
             <div className="flex justify-between text-green-600">
               <span>Coupon</span>
@@ -209,6 +215,23 @@ export default function OrderDetailPage() {
           </div>
         </div>
       </motion.div>
+
+      {/* Special instructions the customer left */}
+      {order.specialInstructions && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="card p-5 mb-5"
+        >
+          <h3 className={cn('font-semibold text-foreground mb-1', language === 'te' ? 'font-telugu' : '')}>
+            {language === 'te' ? 'మీ సూచన' : 'Your note to the kitchen'}
+          </h3>
+          <p className={cn('text-sm text-muted-foreground', language === 'te' ? 'font-telugu' : '')}>
+            {order.specialInstructions}
+          </p>
+        </motion.div>
+      )}
 
       {/* Delivery address */}
       <motion.div

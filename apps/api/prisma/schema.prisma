@@ -336,6 +336,7 @@ model Order {
   subtotal                 Decimal       @db.Decimal(10, 2)
   discount                 Decimal       @default(0) @db.Decimal(10, 2)
   deliveryFee              Decimal       @db.Decimal(10, 2) @map("delivery_fee")
+  tip                      Decimal       @default(0) @db.Decimal(10, 2)
   total                    Decimal       @db.Decimal(10, 2)
   paymentMethod            PaymentMethod @map("payment_method")
   customerNameSnapshot     String        @map("customer_name_snapshot")

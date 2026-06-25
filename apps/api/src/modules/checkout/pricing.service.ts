@@ -25,6 +25,7 @@ export interface PriceBreakdown {
   subtotal: number;
   discount: number;
   deliveryFee: number;
+  tip: number;
   total: number;
   couponCode?: string | null;
   couponId?: string | null;
@@ -43,7 +44,7 @@ export class PricingService {
    */
   async quote(
     userId: string,
-    opts: { couponCode?: string } = {},
+    opts: { couponCode?: string; tip?: number } = {},
     db: Db = this.prisma,
   ): Promise<PriceBreakdown> {
     const [cart, kitchen] = await Promise.all([
@@ -135,13 +136,16 @@ export class PricingService {
     }
 
     const deliveryFee = Number(kitchen.deliveryFee);
-    const total = Math.max(0, +(subtotal - discount + deliveryFee).toFixed(2));
+    // Optional tip — never trust the client total; clamp to a sane range.
+    const tip = +Math.min(Math.max(0, Number(opts.tip ?? 0)), 10000).toFixed(2);
+    const total = Math.max(0, +(subtotal - discount + deliveryFee + tip).toFixed(2));
 
     return {
       items: priced,
       subtotal,
       discount,
       deliveryFee,
+      tip,
       total,
       couponCode,
       couponId,

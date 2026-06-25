@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Filter, ChevronDown, Clock, CheckCircle, Package, Truck, Home, X } from 'lucide-react'
+import { Search, Filter, ChevronDown, Clock, CheckCircle, Package, Truck, Home, X, Phone } from 'lucide-react'
 import { formatCurrency, formatDate, cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
@@ -19,6 +19,17 @@ const STATUS_CONFIG = {
   CANCELLED: { label: 'Cancelled', color: 'text-red-600 bg-red-50', icon: X, next: null, nextLabel: '' },
   REFUNDED: { label: 'Refunded', color: 'text-gray-600 bg-gray-100', icon: Clock, next: null, nextLabel: '' },
 }
+
+// Open statuses an order can be "running late" in.
+const OPEN_STATUSES = ['CONFIRMED', 'PREPARING', 'OUT_FOR_DELIVERY']
+const minutesAgo = (iso: string) => Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000))
+const agoLabel = (iso: string) => {
+  const m = minutesAgo(iso)
+  if (m < 1) return 'just now'
+  if (m < 60) return `${m} min ago`
+  return `${Math.floor(m / 60)}h ${m % 60}m ago`
+}
+const isLate = (status: string, iso: string) => OPEN_STATUSES.includes(status) && minutesAgo(iso) >= 20
 
 export default function AdminOrdersPage() {
   const { orders: apiOrders, mutate } = useAdminOrders()
@@ -59,6 +70,8 @@ export default function AdminOrdersPage() {
           .join(', '),
         time: o.placedAt,
         paymentMethod: o.paymentMethod,
+        paymentStatus: o.payment?.status as string | undefined,
+        specialInstructions: o.specialInstructions as string | undefined,
       })),
     [apiOrders]
   )
@@ -134,23 +147,27 @@ export default function AdminOrdersPage() {
                   transition={{ delay: i * 0.05 }}
                   onClick={() => setSelected(isSelected ? null : order.id)}
                   className={cn(
-                    'card p-4 cursor-pointer transition-all duration-200',
-                    isSelected && 'ring-2 ring-brand-red'
+                    'card p-4 cursor-pointer transition-all duration-200 border-l-4',
+                    isSelected && 'ring-2 ring-brand-red',
+                    isLate(order.status, order.time) ? 'border-l-red-500' : 'border-l-transparent'
                   )}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-mono text-sm font-semibold text-foreground">{order.orderNumber}</p>
                         <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium', cfg?.color)}>
                           {cfg?.label}
                         </span>
+                        {isLate(order.status, order.time) && (
+                          <span className="text-[10px] font-bold text-red-700 bg-red-50 px-1.5 py-0.5 rounded uppercase tracking-wide">Late</span>
+                        )}
                       </div>
                       <p className="text-sm text-foreground font-medium mt-1">{order.customer}</p>
                       <p className="text-xs text-muted-foreground">{order.items.map((i) => `${i.name} ×${i.qty}`).join(', ')}</p>
                       <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                         <Clock className="w-3 h-3" />
-                        {formatDate(order.time)} · {order.paymentMethod === 'COD' ? 'COD' : 'Online'}
+                        {agoLabel(order.time)} · {order.paymentMethod === 'COD' ? 'COD' : 'Online'}
                       </p>
                     </div>
                     <div className="text-right">
@@ -192,11 +209,31 @@ export default function AdminOrdersPage() {
                 <div>
                   <p className="text-muted-foreground text-xs">Customer</p>
                   <p className="font-medium">{selectedOrder.customer}</p>
-                  <p className="text-muted-foreground">{selectedOrder.phone}</p>
+                  {selectedOrder.phone && (
+                    <a
+                      href={`tel:${selectedOrder.phone}`}
+                      className="inline-flex items-center gap-1.5 mt-1 text-brand-red font-medium hover:underline"
+                    >
+                      <Phone className="w-3.5 h-3.5" /> {selectedOrder.phone}
+                    </a>
+                  )}
                 </div>
+
+                {/* Special instructions — the cook needs to see these */}
+                {selectedOrder.specialInstructions && (
+                  <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2">
+                    <p className="text-amber-800 text-[11px] font-bold uppercase tracking-wide mb-0.5">Note from customer</p>
+                    <p className="text-amber-900 text-sm">{selectedOrder.specialInstructions}</p>
+                  </div>
+                )}
+
                 <div>
                   <p className="text-muted-foreground text-xs">Delivery Address</p>
                   <p className="font-medium">{selectedOrder.address}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Placed</p>
+                  <p className="font-medium">{agoLabel(selectedOrder.time)} · {formatDate(selectedOrder.time)}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground text-xs mb-1">Items</p>
@@ -215,7 +252,19 @@ export default function AdminOrdersPage() {
                 </div>
                 <div>
                   <p className="text-muted-foreground text-xs">Payment</p>
-                  <p className="font-medium">{selectedOrder.paymentMethod === 'COD' ? 'Cash on Delivery' : 'Online (Cashfree)'}</p>
+                  <p className="font-medium flex items-center gap-2">
+                    {selectedOrder.paymentMethod === 'COD' ? 'Cash on Delivery' : 'Online (Cashfree)'}
+                    {selectedOrder.paymentMethod !== 'COD' && selectedOrder.paymentStatus && (
+                      <span className={cn(
+                        'text-[10px] font-bold uppercase px-1.5 py-0.5 rounded',
+                        selectedOrder.paymentStatus === 'CAPTURED'
+                          ? 'text-green-700 bg-green-50'
+                          : 'text-amber-700 bg-amber-50',
+                      )}>
+                        {selectedOrder.paymentStatus === 'CAPTURED' ? 'Paid' : 'Awaiting'}
+                      </span>
+                    )}
+                  </p>
                 </div>
               </div>
             </motion.div>

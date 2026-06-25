@@ -17,8 +17,8 @@ export class CheckoutService {
     private readonly orderEvents: OrdersEventBus,
   ) {}
 
-  async quote(userId: string, couponCode?: string) {
-    return this.pricing.quote(userId, { couponCode });
+  async quote(userId: string, couponCode?: string, tip?: number) {
+    return this.pricing.quote(userId, { couponCode, tip });
   }
 
   async placeOrder(
@@ -27,6 +27,7 @@ export class CheckoutService {
       addressId: string;
       paymentMethod: PaymentMethod;
       couponCode?: string;
+      tip?: number;
       specialInstructions?: string;
       idempotencyKey?: string;
     },
@@ -92,7 +93,7 @@ export class CheckoutService {
           }
 
           // Recompute prices from the *locked* cart inside the tx.
-          const quote = await this.pricing.quote(userId, { couponCode: dto.couponCode }, tx);
+          const quote = await this.pricing.quote(userId, { couponCode: dto.couponCode, tip: dto.tip }, tx);
           if (quote.subtotal < quote.minOrderValue) {
             throw new BadRequestException(`Minimum order value is ₹${quote.minOrderValue}`);
           }
@@ -109,6 +110,7 @@ export class CheckoutService {
               subtotal: quote.subtotal,
               discount: quote.discount,
               deliveryFee: quote.deliveryFee,
+              tip: quote.tip,
               total: quote.total,
               paymentMethod: dto.paymentMethod,
               customerNameSnapshot: user.name ?? 'Customer',

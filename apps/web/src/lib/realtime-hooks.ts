@@ -32,8 +32,15 @@ export function useOrderTracking(orderId: string | null, onChange: (status?: str
   }, [orderId, token])
 }
 
-/** Admin: ring + refresh on any new order or status change. */
-export function useAdminOrderAlerts(onNewOrder: () => void, onStatusChange: () => void) {
+/**
+ * Admin: refresh on any new order or status change. The loud/continuous alarm,
+ * desktop notification and banner live in <AdminAlerts/> so they aren't
+ * duplicated; this hook just forwards the events (new order passes its payload).
+ */
+export function useAdminOrderAlerts(
+  onNewOrder: (payload?: { orderId?: string }) => void,
+  onStatusChange: () => void,
+) {
   const token = useAuthStore((s) => s.accessToken)
   const onNew = useRef(onNewOrder)
   const onStatus = useRef(onStatusChange)
@@ -45,30 +52,7 @@ export function useAdminOrderAlerts(onNewOrder: () => void, onStatusChange: () =
     const socket = getSocket()
     if (!socket) return
 
-    let audioCtx: AudioContext | null = null
-    const beep = () => {
-      try {
-        audioCtx = audioCtx ?? new (window.AudioContext || (window as any).webkitAudioContext)()
-        const o = audioCtx.createOscillator()
-        const g = audioCtx.createGain()
-        o.connect(g)
-        g.connect(audioCtx.destination)
-        o.frequency.value = 880
-        o.type = 'sine'
-        g.gain.setValueAtTime(0.001, audioCtx.currentTime)
-        g.gain.exponentialRampToValueAtTime(0.3, audioCtx.currentTime + 0.02)
-        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5)
-        o.start()
-        o.stop(audioCtx.currentTime + 0.5)
-      } catch {
-        /* audio not available */
-      }
-    }
-
-    const newHandler = () => {
-      beep()
-      onNew.current()
-    }
+    const newHandler = (payload: { orderId?: string }) => onNew.current(payload)
     const statusHandler = () => onStatus.current()
 
     socket.on('order:new', newHandler)

@@ -26,6 +26,7 @@ import { useAuthStore } from '@/store/auth-store'
 import { useKitchenSettings } from '@/lib/hooks'
 import { logout } from '@/lib/auth-actions'
 import { NotificationBell } from '@/components/admin/notification-bell'
+import { AdminAlerts } from '@/components/admin/admin-alerts'
 
 type StaffRole = 'OWNER' | 'MANAGER' | 'KITCHEN_STAFF'
 const ALL_STAFF: StaffRole[] = ['OWNER', 'MANAGER', 'KITCHEN_STAFF']
@@ -230,6 +231,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </span>
           </Link>
 
+          <AdminAlerts />
           <NotificationBell />
 
           <Link href="/" className="text-xs text-muted-foreground hover:text-foreground transition-colors hidden sm:block">

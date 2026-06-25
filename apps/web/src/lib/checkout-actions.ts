@@ -6,6 +6,7 @@ export interface QuoteBreakdown {
   subtotal: number
   discount: number
   deliveryFee: number
+  tip: number
   total: number
   couponCode: string | null
   estimatedDeliveryMinutes: number
@@ -30,8 +31,8 @@ export async function syncCartToServer() {
   })
 }
 
-export async function getQuote(couponCode?: string): Promise<QuoteBreakdown> {
-  return api.post<QuoteBreakdown>('/checkout/quote', { couponCode })
+export async function getQuote(couponCode?: string, tip?: number): Promise<QuoteBreakdown> {
+  return api.post<QuoteBreakdown>('/checkout/quote', { couponCode, tip })
 }
 
 interface PlaceOrderResult {
@@ -43,6 +44,7 @@ export async function placeOrder(input: {
   addressId: string
   paymentMethod: 'RAZORPAY' | 'COD'
   couponCode?: string
+  tip?: number
   specialInstructions?: string
   // C1: stable per checkout attempt — duplicate submits return the same order.
   idempotencyKey?: string

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Package, ChevronRight, Clock } from 'lucide-react'
@@ -17,9 +18,22 @@ const STATUS_COLOR: Record<string, 'success' | 'warning' | 'error' | 'default'> 
   CANCELLED: 'error',
 }
 
+const ACTIVE_STATUSES = ['PENDING_PAYMENT', 'CONFIRMED', 'PREPARING', 'OUT_FOR_DELIVERY']
+
 export default function OrdersPage() {
   const { t, language } = useLanguageStore()
   const { orders, isLoading } = useOrders()
+  const [filter, setFilter] = useState<'all' | 'active' | 'past'>('all')
+
+  const filtered = (orders as any[]).filter((o) =>
+    filter === 'all' ? true : filter === 'active' ? ACTIVE_STATUSES.includes(o.status) : !ACTIVE_STATUSES.includes(o.status),
+  )
+
+  const tabs: { id: 'all' | 'active' | 'past'; label: string; labelTe: string }[] = [
+    { id: 'all', label: 'All', labelTe: 'అన్నీ' },
+    { id: 'active', label: 'Active', labelTe: 'ప్రస్తుతం' },
+    { id: 'past', label: 'Past', labelTe: 'గతం' },
+  ]
 
   return (
     <div className="section py-8 md:py-12">
@@ -31,22 +45,40 @@ export default function OrdersPage() {
         {t.account.orders}
       </motion.h1>
 
+      {!isLoading && orders.length > 0 && (
+        <div className="flex gap-2 mb-6">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setFilter(tab.id)}
+              className={cn(
+                'px-4 h-9 rounded-full text-sm font-medium border transition-colors',
+                filter === tab.id ? 'bg-brand-red text-white border-brand-red' : 'bg-card text-foreground/70 border-border',
+                language === 'te' ? 'font-telugu' : '',
+              )}
+            >
+              {language === 'te' ? tab.labelTe : tab.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {isLoading ? (
         <div className="space-y-4 max-w-2xl">
           {[0, 1, 2].map((i) => (
             <div key={i} className="card p-5 animate-pulse h-24" />
           ))}
         </div>
-      ) : orders.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="text-center py-20">
           <Package className="w-11 h-11 mx-auto mb-4 text-brand-red" strokeWidth={1.5} />
           <p className={cn('text-muted-foreground', language === 'te' ? 'font-telugu' : '')}>
-            {t.account.noOrders}
+            {orders.length === 0 ? t.account.noOrders : (language === 'te' ? 'ఈ విభాగంలో ఆర్డర్లు లేవు' : 'No orders here')}
           </p>
         </div>
       ) : (
         <div className="space-y-4 max-w-2xl">
-          {orders.map((order: any, i: number) => (
+          {filtered.map((order: any, i: number) => (
             <motion.div
               key={order.id}
               initial={{ opacity: 0, y: 20 }}

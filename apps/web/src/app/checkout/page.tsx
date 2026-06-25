@@ -59,6 +59,7 @@ export default function CheckoutPage() {
   const [paymentFailed, setPaymentFailed] = useState(false)
   const [quote, setQuote] = useState<QuoteBreakdown | null>(null)
   const [quoteLoading, setQuoteLoading] = useState(true)
+  const [tip, setTip] = useState(0)
   const [showAddrForm, setShowAddrForm] = useState(false)
   const [newAddr, setNewAddr] = useState({ label: 'Home', line1: '', city: 'Jagtial', pincode: '505327' })
 
@@ -131,6 +132,9 @@ export default function CheckoutPage() {
   const discount = quote?.discount ?? 0
   const deliveryFee = quote?.deliveryFee ?? null
   const total = quote?.total ?? null
+  // Tip is added locally for display; the server re-validates it on place-order
+  // (pricing.quote receives the tip), so the charged total matches exactly.
+  const grandTotal = total !== null ? +(total + tip).toFixed(2) : null
   const needsPhone = !userPhone
 
   const handleSendOtp = async () => {
@@ -188,6 +192,7 @@ export default function CheckoutPage() {
         addressId: selectedAddress,
         paymentMethod,
         couponCode: couponCode || undefined,
+        tip: tip > 0 ? tip : undefined,
         idempotencyKey: idemKeyRef.current,
       })
 
@@ -383,11 +388,39 @@ export default function CheckoutPage() {
                     <span>-{formatCurrency(discount)}</span>
                   </div>
                 )}
+                {tip > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{language === 'te' ? 'చిట్కా' : 'Tip'}</span>
+                    <span>{formatCurrency(tip)}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Tip the kitchen */}
+              <div className="border-t border-border pt-3">
+                <p className={cn('text-xs font-semibold text-foreground mb-2', language === 'te' ? 'font-telugu' : '')}>
+                  {language === 'te' ? 'వంటవారికి చిట్కా (ఐచ్ఛికం)' : 'Tip the kitchen (optional)'}
+                </p>
+                <div className="flex gap-2 flex-wrap">
+                  {[0, 10, 20, 30].map((amt) => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => setTip(amt)}
+                      className={cn(
+                        'px-3 h-9 rounded-full text-sm font-medium border transition-colors',
+                        tip === amt ? 'bg-brand-red text-white border-brand-red' : 'bg-card text-foreground/70 border-border',
+                      )}
+                    >
+                      {amt === 0 ? (language === 'te' ? 'వద్దు' : 'No tip') : formatCurrency(amt)}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="border-t border-border pt-3 flex justify-between font-bold text-base">
                 <span>{t.cart.total}</span>
-                <span className="text-brand-red">{total === null ? '—' : formatCurrency(total)}</span>
+                <span className="text-brand-red">{grandTotal === null ? '—' : formatCurrency(grandTotal)}</span>
               </div>
 
               {/* H-2: phone verification gate */}

@@ -81,7 +81,7 @@ export default function CartPage() {
 
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Cart items */}
-            <div className="lg:col-span-2 space-y-3">
+            <div className="lg:col-span-2 space-y-3 min-w-0">
               <AnimatePresence initial={false}>
                 {items.map((item) => (
                   <motion.div
@@ -151,7 +151,7 @@ export default function CartPage() {
             </div>
 
             {/* Order summary */}
-            <div className="space-y-4">
+            <div className="space-y-4 min-w-0">
               {/* Coupons & offers — instant validation */}
               <CouponBox subtotal={sub} />
 

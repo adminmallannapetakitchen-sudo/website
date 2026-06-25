@@ -213,14 +213,21 @@
     font-size: 16px;
   }
 }
-/* Belt-and-suspenders: no horizontal scrolling of the whole page. `clip` does
-   NOT create a scroll container, so position: sticky + vertical scroll-snap keep
-   working. Applied at the viewport (html) level too, because `position: fixed`
-   elements anchor to the viewport — body's clip can't reach them (e.g. the mobile
-   drawer sliding to x:100% off the right edge during its close animation). */
+/* Belt-and-suspenders: no horizontal scrolling of the whole page.
+   `clip` is preferred because it does NOT create a scroll container, so
+   position: sticky + vertical scroll-snap keep working. But older browsers —
+   notably iOS Safari < 16 — IGNORE `overflow: clip`, which let a stray
+   fixed/decorative element push the whole page sideways there. So default to
+   `hidden` (universally honored) and upgrade to `clip` only where supported. */
 html,
 body {
-  overflow-x: clip;
+  overflow-x: hidden;
+}
+@supports (overflow: clip) {
+  html,
+  body {
+    overflow-x: clip;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

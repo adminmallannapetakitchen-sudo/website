@@ -44,7 +44,7 @@ export function CurtainRiser() {
       {show && (
         <motion.div
           key="curtain-root"
-          className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-auto"
+          className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-auto overflow-hidden"
           aria-hidden
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}

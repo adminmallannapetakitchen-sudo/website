@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input'
 import { useAuthStore } from '@/store/auth-store'
 import { useProfile, useAddresses } from '@/lib/hooks'
 import { api } from '@/lib/api-client'
-import { logout } from '@/lib/auth-actions'
+import { logout, requestAttachPhoneOtp, verifyAttachPhoneOtp } from '@/lib/auth-actions'
 import { enablePush, disablePush, getPushState } from '@/lib/push'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -25,7 +25,14 @@ export default function AccountPage() {
   const { addresses, mutate: mutateAddr } = useAddresses()
 
   const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
   const [savingName, setSavingName] = useState(false)
+  // Phone change (OTP-verified)
+  const [phoneEdit, setPhoneEdit] = useState(false)
+  const [newPhone, setNewPhone] = useState('')
+  const [phoneOtp, setPhoneOtp] = useState('')
+  const [phoneOtpSent, setPhoneOtpSent] = useState(false)
+  const [phoneBusy, setPhoneBusy] = useState(false)
   const [pw, setPw] = useState({ current: '', next: '' })
   const [savingPw, setSavingPw] = useState(false)
   const [prefs, setPrefs] = useState({ orderUpdates: true, sundaySpecialAlerts: true, marketing: false })
@@ -41,6 +48,7 @@ export default function AccountPage() {
   useEffect(() => {
     if (profile) {
       setName(profile.name ?? '')
+      setEmail(profile.email ?? '')
       if (profile.notificationPreferences) setPrefs(profile.notificationPreferences)
     }
   }, [profile])
@@ -63,10 +71,10 @@ export default function AccountPage() {
     )
   }
 
-  const saveName = async () => {
+  const saveProfile = async () => {
     setSavingName(true)
     try {
-      await api.patch('/me', { name })
+      await api.patch('/me', { name, email: email.trim() || undefined })
       await mutateProfile()
       toast.success('Profile updated')
     } catch (e: any) {
@@ -76,15 +84,55 @@ export default function AccountPage() {
     }
   }
 
+  const sendPhoneOtp = async () => {
+    const p = newPhone.replace(/[\s-]/g, '')
+    if (!/^(\+?91)?[6-9]\d{9}$/.test(p)) return toast.error('Enter a valid 10-digit mobile number')
+    setPhoneBusy(true)
+    try {
+      await requestAttachPhoneOtp(p)
+      setPhoneOtpSent(true)
+      toast.success('OTP sent to your new number')
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Could not send OTP')
+    } finally {
+      setPhoneBusy(false)
+    }
+  }
+
+  const verifyPhone = async () => {
+    if (!phoneOtp.trim()) return toast.error('Enter the OTP')
+    setPhoneBusy(true)
+    try {
+      await verifyAttachPhoneOtp(newPhone.replace(/[\s-]/g, ''), phoneOtp.trim())
+      await mutateProfile()
+      setPhoneEdit(false)
+      setPhoneOtpSent(false)
+      setPhoneOtp('')
+      setNewPhone('')
+      toast.success('Phone number updated')
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Invalid OTP')
+    } finally {
+      setPhoneBusy(false)
+    }
+  }
+
+  const hasPassword = !!profile?.hasPassword
+
   const changePassword = async () => {
-    if (!pw.current || pw.next.length < 8) return toast.error('Enter current password and a new one (8+ chars)')
+    if (pw.next.length < 8) return toast.error('New password must be at least 8 characters')
+    if (hasPassword && !pw.current) return toast.error('Enter your current password')
     setSavingPw(true)
     try {
-      await api.post('/auth/change-password', { currentPassword: pw.current, newPassword: pw.next })
+      await api.post('/auth/change-password', {
+        currentPassword: hasPassword ? pw.current : undefined,
+        newPassword: pw.next,
+      })
       setPw({ current: '', next: '' })
-      toast.success('Password changed')
+      await mutateProfile()
+      toast.success(hasPassword ? 'Password changed' : 'Password set')
     } catch (e: any) {
-      toast.error(e?.message ?? 'Could not change password')
+      toast.error(e?.message ?? 'Could not save password')
     } finally {
       setSavingPw(false)
     }
@@ -169,11 +217,45 @@ export default function AccountPage() {
       <div className="card p-5 space-y-4">
         <h2 className="font-semibold text-foreground flex items-center gap-2"><User className="w-5 h-5 text-brand-red" /> Profile</h2>
         <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} icon={<User className="w-4 h-4" />} />
-        <div className="grid sm:grid-cols-2 gap-3 text-sm">
-          <div className="flex items-center gap-2 text-muted-foreground"><Mail className="w-4 h-4" />{profile?.email ?? '—'}</div>
-          <div className="flex items-center gap-2 text-muted-foreground"><Phone className="w-4 h-4" />{profile?.phone ?? '—'}</div>
+        <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} icon={<Mail className="w-4 h-4" />} placeholder="you@example.com" />
+        <Button onClick={saveProfile} loading={savingName} size="sm" icon={<Save className="w-4 h-4" />}>Save</Button>
+
+        {/* Phone — change requires OTP verification */}
+        <div className="border-t border-border pt-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm flex items-center gap-2 text-foreground">
+              <Phone className="w-4 h-4 text-muted-foreground" />
+              <span className="font-medium">{profile?.phone ?? 'No phone added'}</span>
+            </p>
+            {!phoneEdit && (
+              <Button variant="outline" size="sm" onClick={() => setPhoneEdit(true)}>
+                {profile?.phone ? 'Change' : 'Add phone'}
+              </Button>
+            )}
+          </div>
+
+          {phoneEdit && (
+            <div className="mt-3 space-y-2 bg-muted/40 rounded-xl p-3">
+              {!phoneOtpSent ? (
+                <>
+                  <Input label="New mobile number" inputMode="numeric" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="10-digit number" icon={<Phone className="w-4 h-4" />} />
+                  <div className="flex gap-2">
+                    <Button size="sm" loading={phoneBusy} onClick={sendPhoneOtp}>Send OTP</Button>
+                    <Button size="sm" variant="outline" onClick={() => { setPhoneEdit(false); setNewPhone('') }}>Cancel</Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Input label={`Enter the OTP sent to ${newPhone}`} inputMode="numeric" value={phoneOtp} onChange={(e) => setPhoneOtp(e.target.value)} placeholder="OTP" />
+                  <div className="flex gap-2">
+                    <Button size="sm" loading={phoneBusy} onClick={verifyPhone}>Verify & save</Button>
+                    <Button size="sm" variant="outline" onClick={() => setPhoneOtpSent(false)}>Back</Button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
-        <Button onClick={saveName} loading={savingName} size="sm" icon={<Save className="w-4 h-4" />}>Save</Button>
       </div>
 
       {/* Addresses */}
@@ -246,15 +328,22 @@ export default function AccountPage() {
         ))}
       </div>
 
-      {/* Password (only if user has a password set) */}
-      {profile?.hasPassword && (
-        <div className="card p-5 space-y-4">
-          <h2 className="font-semibold text-foreground flex items-center gap-2"><Lock className="w-5 h-5 text-brand-red" /> Change Password</h2>
+      {/* Password — change if one exists, or set one for Google/phone accounts */}
+      <div className="card p-5 space-y-4">
+        <h2 className="font-semibold text-foreground flex items-center gap-2">
+          <Lock className="w-5 h-5 text-brand-red" /> {hasPassword ? 'Change Password' : 'Set a Password'}
+        </h2>
+        {!hasPassword && (
+          <p className="text-xs text-muted-foreground -mt-2">
+            You signed in with Google/phone. Set a password to also log in with your email.
+          </p>
+        )}
+        {hasPassword && (
           <Input label="Current password" type="password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} icon={<Lock className="w-4 h-4" />} />
-          <Input label="New password" type="password" value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} icon={<Lock className="w-4 h-4" />} />
-          <Button onClick={changePassword} loading={savingPw} size="sm">Update Password</Button>
-        </div>
-      )}
+        )}
+        <Input label="New password" type="password" value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} icon={<Lock className="w-4 h-4" />} />
+        <Button onClick={changePassword} loading={savingPw} size="sm">{hasPassword ? 'Update Password' : 'Set Password'}</Button>
+      </div>
 
       <Button
         variant="outline"

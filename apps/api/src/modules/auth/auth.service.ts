@@ -361,12 +361,17 @@ export class AuthService {
     return { ok: true };
   }
 
-  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+  async changePassword(userId: string, currentPassword: string | undefined, newPassword: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user || !user.hashedPassword) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException('User not found');
 
-    const ok = await argon2.verify(user.hashedPassword, currentPassword);
-    if (!ok) throw new UnauthorizedException('Current password incorrect');
+    // If a password already exists, verify the current one. Google/phone
+    // accounts (no password yet) may set one for the first time without it.
+    if (user.hashedPassword) {
+      if (!currentPassword) throw new BadRequestException('Current password is required');
+      const ok = await argon2.verify(user.hashedPassword, currentPassword);
+      if (!ok) throw new UnauthorizedException('Current password incorrect');
+    }
 
     const hashed = await argon2.hash(newPassword, { type: argon2.argon2id });
     await this.prisma.user.update({ where: { id: user.id }, data: { hashedPassword: hashed } });

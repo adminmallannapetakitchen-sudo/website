@@ -50,6 +50,8 @@ export class ResetPasswordDto {
 }
 
 export class ChangePasswordDto {
-  @IsString() @MaxLength(128) currentPassword!: string;
+  // Optional: omitted when a Google/phone account is setting a password for the
+  // first time (there is no current password to verify).
+  @IsOptional() @IsString() @MaxLength(128) currentPassword?: string;
   @IsString() @MinLength(8) @MaxLength(128) newPassword!: string;
 }

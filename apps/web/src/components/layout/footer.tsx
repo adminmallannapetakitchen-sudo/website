@@ -144,6 +144,8 @@ export function Footer() {
               {[
                 { href: '/privacy', label: t.footer.links.privacy },
                 { href: '/terms', label: t.footer.links.terms },
+                { href: '/refund', label: t.footer.links.refund },
+                { href: '/contact', label: t.footer.links.contact },
               ].map((link) => (
                 <li key={link.href}>
                   <Link

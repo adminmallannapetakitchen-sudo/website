@@ -3,10 +3,10 @@ import { withSentryConfig } from '@sentry/nextjs'
 // Content-Security-Policy covering every origin the app actually talks to:
 // self, Cashfree (SDK + checkout frames), Google sign-in, Cloudinary/Unsplash
 // images, Google Fonts, and the Railway API (HTTPS + WebSocket).
-// Shipped as REPORT-ONLY first: it blocks nothing (so it can't break the live
-// payment/login flows) but logs any violation to the browser console. After
-// verifying the console is clean on checkout + Google login, switch the header
-// key below from 'Content-Security-Policy-Report-Only' to 'Content-Security-Policy'.
+// Now ENFORCED (was report-only during rollout). Every origin the app uses is
+// allow-listed below, so this blocks injected/foreign resources without
+// breaking the live payment/login flows. If a new third-party origin is added,
+// add it to the matching directive here or it will be blocked.
 const CSP = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.cashfree.com https://sdk.cashfree.com https://accounts.google.com https://apis.google.com https://*.gstatic.com",
@@ -39,9 +39,8 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react', 'framer-motion'],
     instrumentationHook: true,
   },
-  // Safe, non-breaking security headers for every page (the Next app has no
-  // helmet like the API does). A strict Content-Security-Policy is intentionally
-  // left out here — it needs testing against Cashfree/Cloudinary/Google sign-in.
+  // Security headers for every page (the Next app has no helmet like the API
+  // does). The Content-Security-Policy is enforced — see the CSP note above.
   async headers() {
     return [
       {
@@ -52,7 +51,7 @@ const nextConfig = {
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
           { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
-          { key: 'Content-Security-Policy-Report-Only', value: CSP },
+          { key: 'Content-Security-Policy', value: CSP },
         ],
       },
     ]

@@ -57,6 +57,17 @@ export class MediaService {
       return { url };
     }
 
+    // Production must use Cloudinary. The local-disk fallback writes to the
+    // API container's ephemeral filesystem and returns a /uploads/<file> URL
+    // that the (separate) web host can't serve — so the image 404s. Fail loudly
+    // here instead of silently producing a broken image.
+    if (process.env.NODE_ENV === 'production') {
+      this.logger.error('Image upload attempted but Cloudinary is not configured (CLOUDINARY_* env vars).');
+      throw new BadRequestException(
+        'Image storage is not configured. Please set the Cloudinary keys before uploading images.',
+      );
+    }
+
     const dir = this.localUploadDir();
     mkdirSync(dir, { recursive: true });
     const filename = `${Date.now()}-${randomUUID()}.${ext}`;
